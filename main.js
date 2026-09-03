@@ -18,6 +18,7 @@ if (
   console.error("Configuración de Supabase vacía o con caracteres inválidos.");
 }
 
+alert('Supabase cargado: ' + (typeof window.supabase !== 'undefined'));
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Generador de imagen QR: servicio gratuito, no requiere instalar nada.
@@ -68,18 +69,19 @@ $$("[data-close]").forEach((btn) =>
 $("#btn-login").addEventListener("click", handleLogin);
 
 async function handleLogin() {
-  console.log("Iniciando sesión con teléfono...");
-  const phone = $("#phone-input").value.trim();
-  const name = $("#name-input").value.trim();
-  const errorEl = $("#login-error");
-  errorEl.textContent = "";
-
-  if (phone.length < 10) {
-    errorEl.textContent = "Escribe un teléfono válido de 10 dígitos.";
-    return;
-  }
-
+  let errorEl;
   try {
+    console.log("Iniciando sesión con teléfono...");
+    const phone = $("#phone-input").value.trim();
+    const name = $("#name-input").value.trim();
+    errorEl = $("#login-error");
+    errorEl.textContent = "";
+
+    if (phone.length < 10) {
+      errorEl.textContent = "Escribe un teléfono válido de 10 dígitos.";
+      return;
+    }
+
     // 1. Buscar si ya existe el perfil
     let { data: existing, error: findErr } = await supabase
       .from("profiles")
@@ -113,8 +115,10 @@ async function handleLogin() {
     startApp();
   } catch (err) {
     console.error("Error en el inicio de sesión:", err);
-    alert("Error de Supabase: " + JSON.stringify(err));
-    errorEl.textContent = "No pudimos conectar. Revisa tu conexión o las llaves de Supabase.";
+    alert('ERROR: ' + JSON.stringify(err && err.message ? err.message : err));
+    if (errorEl) {
+      errorEl.textContent = "No pudimos conectar. Revisa tu conexión o las llaves de Supabase.";
+    }
   }
 }
 
