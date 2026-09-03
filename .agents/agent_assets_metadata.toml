@@ -1,0 +1,16 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "JUOPxQks2L9f9WWXQKBXh"
+uri = "file://mila-cafe-estatico.zip"
+type = "unspecified"
+title = "Mila Café — archivos estáticos"
+description = "ZIP con únicamente index.html, styles.css, main.js y caja.html."
+logical_id = "e1a8d52d-70fe-44ea-b2b7-4981df75c3f8"
+content_hash = "sha256:d6883968df36b8fb73a80bb8821c26f070d066f048203ed2571d8f72dd9033f3"
+size = 12483
+mtime_ms = 1788478877349
+storage_uri = "gcs://replit-rams-assets-spock/rams/assets/repl:1443d9fb-e5b1-4db6-aff4-d6d3871efc49/e1a8d52d-70fe-44ea-b2b7-4981df75c3f8/ad2628d0-11fc-4ffa-948f-a9f06285d7e4"
+storage_version_token = "1788478882463050"
+content_type = "application/octet-stream"
