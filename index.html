@@ -1,1 +1,75 @@
-<!DOCTYPE html><html><head><title>Mila Cafe</title><link rel="stylesheet" href="styles.css"></head><body><h1>Mila Cafe - Changuito Express</h1><script src="main.js"></script></body></html>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mila Café — Panel de caja</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Work+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="styles.css" />
+<style>
+  .caja-wrap{ max-width:420px; margin:40px auto; padding:0 20px; }
+  .caja-card{ background:#fff; border-radius:var(--radius); box-shadow:var(--shadow); padding:28px 24px; text-align:center; }
+  .caja-result{ margin-top:18px; border-radius:var(--radius-sm); padding:16px; font-size:14px; text-align:left; }
+  .caja-result.ok{ background:#EAF1E4; color:var(--sage); }
+  .caja-result.err{ background:#F6E3E1; color:var(--danger); }
+</style>
+</head>
+<body>
+  <div class="caja-wrap">
+    <div class="caja-card">
+      <p class="eyebrow">Mila Café</p>
+      <h1 class="logo" style="font-size:24px;">Panel de caja</h1>
+      <p class="login-sub">Escanea el QR con tu lector (funciona como teclado) o pega el código.</p>
+
+      <label class="field-label" for="token-input">Código del ticket</label>
+      <input id="token-input" class="input" type="text" placeholder="Escanea aquí o pega el código" autofocus />
+
+      <button id="btn-validate" class="btn btn-primary btn-block" style="margin-top:16px;">Validar ticket</button>
+
+      <div id="result" class="caja-result hidden"></div>
+    </div>
+  </div>
+
+  <script>
+    // 🔧 Usa las mismas llaves que en main.js
+    const SUPABASE_URL = "https://jspmxmaeaswnumxyetcu.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_M_cDBeTCWqnii7cvT0y6bQ_C4lsVijO";
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const input = document.getElementById("token-input");
+    const resultEl = document.getElementById("result");
+
+    // Si usan un lector de QR físico, este normalmente "escribe" el
+    // código y termina con Enter — por eso escuchamos el evento Enter.
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") validate();
+    });
+    document.getElementById("btn-validate").addEventListener("click", validate);
+
+    async function validate() {
+      const token = input.value.trim();
+      if (!token) return;
+
+      const { data, error } = await supabase.rpc("redeem_order", { p_qr_token: token });
+
+      resultEl.classList.remove("hidden", "ok", "err");
+      if (error || !data.success) {
+        resultEl.classList.add("err");
+        resultEl.textContent = error ? "Error de conexión" : data.message;
+      } else {
+        resultEl.classList.add("ok");
+        resultEl.innerHTML = `
+          ✔ ${data.message}<br>
+          Cliente: ${data.cliente || "—"}<br>
+          Total: $${Number(data.total).toFixed(2)}<br>
+          Cashback abonado: $${Number(data.cashback_abonado).toFixed(2)}
+        `;
+      }
+      input.value = "";
+      input.focus();
+    }
+  </script>
+</body>
+</html>

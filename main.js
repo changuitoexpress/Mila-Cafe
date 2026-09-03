@@ -6,7 +6,7 @@
 // 🔧 CONFIGURACIÓN — pon aquí tus llaves de Supabase
 // Las encuentras en: Supabase → Project Settings → API
 // ============================================================
-const SUPABASE_URL = "https://jspmxmaeaswnumxyetcu.supabase.co/rest/v1/";
+const SUPABASE_URL = "https://jspmxmaeaswnumxyetcu.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_M_cDBeTCWqnii7cvT0y6bQ_C4lsVijO";
 
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
