@@ -89,6 +89,7 @@ async function handleLogin() {
 
     if (findErr) {
       console.error("Error de Supabase DB:", findErr);
+      alert("Error de Supabase: " + JSON.stringify(findErr));
       throw findErr;
     }
 
@@ -103,6 +104,7 @@ async function handleLogin() {
         .single();
       if (insertErr) {
         console.error("Error de Supabase DB:", insertErr);
+        alert("Error de Supabase: " + JSON.stringify(insertErr));
         throw insertErr;
       }
       currentUser = created;
@@ -111,6 +113,7 @@ async function handleLogin() {
     startApp();
   } catch (err) {
     console.error("Error en el inicio de sesión:", err);
+    alert("Error de Supabase: " + JSON.stringify(err));
     errorEl.textContent = "No pudimos conectar. Revisa tu conexión o las llaves de Supabase.";
   }
 }
