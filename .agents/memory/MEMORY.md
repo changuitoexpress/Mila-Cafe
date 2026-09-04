@@ -1,0 +1,1 @@
+- [Supabase CDN global](supabase-cdn-global.md) — avoid naming the local client `supabase` in classic scripts because the CDN owns that global.
