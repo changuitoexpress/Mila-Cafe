@@ -19,7 +19,7 @@ if (
 }
 
 alert('Supabase cargado: ' + (typeof window.supabase !== 'undefined'));
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Generador de imagen QR: servicio gratuito, no requiere instalar nada.
 // Solo le mandamos el texto (el token) y nos regresa una imagen PNG.
@@ -83,7 +83,7 @@ async function handleLogin() {
     }
 
     // 1. Buscar si ya existe el perfil
-    let { data: existing, error: findErr } = await supabase
+    let { data: existing, error: findErr } = await supabaseClient
       .from("profiles")
       .select("*")
       .eq("phone", phone)
@@ -99,7 +99,7 @@ async function handleLogin() {
       currentUser = existing;
     } else {
       // 2. Si no existe, lo creamos
-      const { data: created, error: insertErr } = await supabase
+      const { data: created, error: insertErr } = await supabaseClient
         .from("profiles")
         .insert({ phone, name: name || "Cliente Mila" })
         .select()
@@ -151,7 +151,7 @@ $$(".tab").forEach((tab) =>
 // ============================================================
 async function loadProducts() {
   const grid = $("#products-grid");
-  const { data, error } = await supabase
+  const { data, error } = await supabaseClient
     .from("products")
     .select("*")
     .eq("active", true)
@@ -324,7 +324,7 @@ async function handleCheckout() {
 
   try {
     // 1. Crear la orden (pending)
-    const { data: order, error: orderErr } = await supabase
+    const { data: order, error: orderErr } = await supabaseClient
       .from("orders")
       .insert({ user_id: currentUser.id, wallet_used: walletUsed, payment_method: paymentMethod })
       .select()
@@ -340,11 +340,11 @@ async function handleCheckout() {
       unit_price: c.product.price,
       cashback_percent: c.product.cashback_percent,
     }));
-    const { error: itemsErr } = await supabase.from("order_items").insert(itemsPayload);
+    const { error: itemsErr } = await supabaseClient.from("order_items").insert(itemsPayload);
     if (itemsErr) throw itemsErr;
 
     // 3. Releer la orden ya con total/cashback calculados por el trigger
-    const { data: finalOrder, error: reErr } = await supabase
+    const { data: finalOrder, error: reErr } = await supabaseClient
       .from("orders")
       .select("*")
       .eq("id", order.id)
@@ -401,7 +401,7 @@ function showTicket(order) {
 // MI CUENTA — saldo e historial
 // ============================================================
 async function refreshWalletUI() {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseClient
     .from("profiles")
     .select("wallet_balance")
     .eq("id", currentUser.id)
@@ -414,7 +414,7 @@ async function refreshWalletUI() {
 
 async function loadTransactions() {
   const list = $("#transactions-list");
-  const { data, error } = await supabase
+  const { data, error } = await supabaseClient
     .from("transactions")
     .select("*")
     .eq("user_id", currentUser.id)
