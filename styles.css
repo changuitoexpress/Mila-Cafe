@@ -159,10 +159,20 @@ body{
 
 /* ---------- GRID DE PRODUCTOS ---------- */
 .products-grid{
+  margin-top:20px;
+}
+.category-group + .category-group{ margin-top:28px; }
+.category-heading{
+  display:flex; align-items:baseline; justify-content:space-between;
+  gap:12px; margin-bottom:12px; padding-bottom:8px;
+  border-bottom:1.5px solid var(--cream-2);
+}
+.category-heading h3{ font-family:'Fraunces', serif; font-size:21px; }
+.category-heading span{ color:var(--espresso-soft); font-size:11px; white-space:nowrap; }
+.category-products{
   display:grid;
   grid-template-columns:repeat(auto-fill, minmax(150px,1fr));
   gap:14px;
-  margin-top:20px;
 }
 .product-card{
   background:#fff;
@@ -179,6 +189,12 @@ body{
 .product-card .desc{ font-size:12.5px; color:var(--espresso-soft); flex:1; }
 .product-card .price-row{ display:flex; align-items:center; justify-content:space-between; margin-top:6px; }
 .product-card .price{ font-weight:700; font-size:15px; }
+.menu-status{
+  background:#fff; border-radius:var(--radius); box-shadow:var(--shadow);
+  padding:20px; color:var(--espresso-soft); font-size:14px;
+}
+.menu-status strong{ display:block; color:var(--espresso); margin-bottom:6px; }
+.menu-status p{ line-height:1.5; }
 
 /* Insignia de cashback: aro tipo "sello de taza" */
 .cashback-badge{
@@ -252,6 +268,7 @@ body{
 }
 .wallet-amount{ font-family:'Fraunces', serif; font-size:44px; font-weight:600; margin:4px 0; }
 .wallet-hint{ font-size:12.5px; opacity:.75; }
+.account-logout{ margin-top:14px; }
 .section-title{ font-family:'Fraunces', serif; font-size:18px; margin:26px 0 12px; }
 .tx-list{ display:flex; flex-direction:column; gap:10px; }
 .tx-row{ display:flex; justify-content:space-between; align-items:center; background:#fff; border-radius:var(--radius-sm); padding:12px 14px; box-shadow:var(--shadow); }
@@ -278,10 +295,33 @@ body{
 .ticket-detail{ text-align:left; background:var(--cream); border-radius:var(--radius-sm); padding:14px; font-size:13.5px; margin-bottom:20px; }
 .ticket-detail .row{ display:flex; justify-content:space-between; padding:3px 0; }
 
+/* ---------- CARRITO FLOTANTE ---------- */
+.floating-cart{
+  position:fixed; right:20px; bottom:20px; z-index:20;
+  display:flex; align-items:center; gap:9px;
+  border:0; border-radius:999px; padding:12px 15px;
+  background:var(--espresso); color:var(--cream);
+  box-shadow:0 10px 24px rgba(43,27,18,.28);
+  font:600 13px 'Work Sans', sans-serif; cursor:pointer;
+}
+.floating-cart:hover{ background:var(--espresso-soft); }
+.floating-cart:focus-visible{ outline:2px solid var(--copper); outline-offset:3px; }
+.floating-cart-icon{ font-size:18px; line-height:1; }
+.floating-cart-count{
+  display:flex; align-items:center; justify-content:center;
+  min-width:21px; height:21px; padding:0 5px;
+  border-radius:50%; background:var(--rose); color:var(--espresso);
+  font-size:11px;
+}
+
 /* ---------- TOAST ---------- */
 .toast{
   position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
   background:var(--espresso); color:var(--cream);
   padding:12px 20px; border-radius:999px; font-size:13.5px;
   box-shadow:var(--shadow); z-index:100;
+}
+
+@media (max-width:420px){
+  .floating-cart{ right:14px; bottom:14px; }
 }

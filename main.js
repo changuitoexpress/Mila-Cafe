@@ -29,6 +29,7 @@ function qrImageUrl(text, size = 260) {
 
 // Número de WhatsApp del restaurante (52 = México + los 10 dígitos)
 const RESTAURANT_WHATSAPP = "522222998533";
+const SESSION_STORAGE_KEY = "milaCafeSession";
 
 // ============================================================
 // ESTADO EN MEMORIA
@@ -67,6 +68,7 @@ $$("[data-close]").forEach((btn) =>
 // Si el teléfono no existe en "profiles", se crea uno nuevo.
 // ============================================================
 $("#btn-login").addEventListener("click", handleLogin);
+$("#btn-logout")?.addEventListener("click", handleLogout);
 
 async function handleLogin() {
   let errorEl;
@@ -112,6 +114,7 @@ async function handleLogin() {
       currentUser = created;
     }
 
+    saveSession();
     startApp();
   } catch (err) {
     console.error("Error en el inicio de sesión:", err);
@@ -125,9 +128,61 @@ async function handleLogin() {
 function startApp() {
   $("#view-login").classList.remove("active");
   $("#app").classList.remove("hidden");
+  $$(".tab").forEach((tab) => tab.classList.toggle("active", tab.dataset.tab === "menu"));
+  $$(".view").forEach((view) => view.classList.toggle("active", view.id === "view-menu"));
   $("#user-name-tag").textContent = currentUser.name || "Cliente Mila";
   loadProducts();
   refreshWalletUI();
+}
+
+function saveSession() {
+  if (!currentUser) return;
+
+  try {
+    localStorage.setItem(
+      SESSION_STORAGE_KEY,
+      JSON.stringify({
+        id: currentUser.id,
+        phone: currentUser.phone,
+        name: currentUser.name || "Cliente Mila",
+        wallet_balance: currentUser.wallet_balance || 0,
+      })
+    );
+  } catch (err) {
+    console.warn("No se pudo guardar la sesión en este navegador:", err);
+  }
+}
+
+function restoreSession() {
+  try {
+    const saved = localStorage.getItem(SESSION_STORAGE_KEY);
+    if (!saved) return;
+
+    const session = JSON.parse(saved);
+    if (!session || !session.id || !session.phone) {
+      localStorage.removeItem(SESSION_STORAGE_KEY);
+      return;
+    }
+
+    currentUser = session;
+    startApp();
+  } catch (err) {
+    console.warn("No se pudo restaurar la sesión guardada:", err);
+    localStorage.removeItem(SESSION_STORAGE_KEY);
+  }
+}
+
+function handleLogout() {
+  localStorage.removeItem(SESSION_STORAGE_KEY);
+  currentUser = null;
+  products = [];
+  cart = [];
+  updateCartBadge();
+  $("#app").classList.add("hidden");
+  $("#view-login").classList.add("active");
+  $("#phone-input").value = "";
+  $("#name-input").value = "";
+  $("#login-error").textContent = "";
 }
 
 // ============================================================
@@ -151,35 +206,85 @@ $$(".tab").forEach((tab) =>
 // ============================================================
 async function loadProducts() {
   const grid = $("#products-grid");
-  const { data, error } = await supabaseClient
+  let { data, error } = await supabaseClient
     .from("products")
     .select("*")
     .eq("active", true)
     .order("category");
 
+  if (error || !data || data.length === 0) {
+    console.error("No se pudo consultar products con active=true:", error);
+    const fallback = await supabaseClient
+      .from("products")
+      .select("*")
+      .order("category");
+    data = fallback.data;
+    error = fallback.error;
+  }
+
   if (error) {
-    grid.innerHTML = `<p class="loading-text">No se pudo cargar el menú.</p>`;
-    console.error(error);
+    grid.innerHTML = `
+      <div class="menu-status menu-error">
+        <strong>No se pudo cargar el menú.</strong>
+        <p>La tabla products no está disponible para este acceso. Revisa la política de lectura pública en Supabase.</p>
+      </div>
+    `;
+    console.error("Error definitivo al cargar products:", error);
     return;
   }
 
   products = data;
   grid.innerHTML = "";
 
-  products.forEach((p) => {
-    const card = document.createElement("div");
-    card.className = "product-card";
-    card.innerHTML = `
-      <span class="cat">${p.category || "Café"}</span>
-      <h3>${p.name}</h3>
-      <p class="desc">${p.description || ""}</p>
-      <div class="price-row">
-        <span class="price">$${money(p.price)}</span>
-        <span class="cashback-badge">Gana $${money((p.price * p.cashback_percent) / 100)} aquí</span>
+  if (!products || products.length === 0) {
+    grid.innerHTML = `
+      <div class="menu-status menu-empty">
+        <strong>No hay productos visibles.</strong>
+        <p>Supabase respondió sin filas para products. Revisa RLS y la política SELECT de la tabla.</p>
       </div>
     `;
-    card.addEventListener("click", () => openProductModal(p));
-    grid.appendChild(card);
+    console.error("products respondió cero filas; posible RLS o tabla vacía.");
+    return;
+  }
+
+  const groupedProducts = new Map();
+  products.forEach((product) => {
+    const category = (product.category || "Otros").trim() || "Otros";
+    if (!groupedProducts.has(category)) groupedProducts.set(category, []);
+    groupedProducts.get(category).push(product);
+  });
+
+  groupedProducts.forEach((categoryProducts, category) => {
+    const group = document.createElement("section");
+    group.className = "category-group";
+
+    const heading = document.createElement("div");
+    heading.className = "category-heading";
+    heading.innerHTML = `<h3></h3><span>${categoryProducts.length} productos</span>`;
+    heading.querySelector("h3").textContent = category;
+
+    const categoryGrid = document.createElement("div");
+    categoryGrid.className = "category-products";
+
+    categoryProducts.forEach((p) => {
+      const card = document.createElement("div");
+      card.className = "product-card";
+      card.innerHTML = `
+        <span class="cat">${p.category || "Café"}</span>
+        <h3>${p.name}</h3>
+        <p class="desc">${p.description || ""}</p>
+        <div class="price-row">
+          <span class="price">$${money(p.price)}</span>
+          <span class="cashback-badge">Gana $${money((p.price * p.cashback_percent) / 100)} aquí</span>
+        </div>
+      `;
+      card.addEventListener("click", () => openProductModal(p));
+      categoryGrid.appendChild(card);
+    });
+
+    group.appendChild(heading);
+    group.appendChild(categoryGrid);
+    grid.appendChild(group);
   });
 }
 
@@ -243,19 +348,27 @@ function updateCartBadge() {
   const badge = $("#cart-count");
   badge.textContent = count;
   badge.classList.toggle("hidden", count === 0);
+  const floatingCart = $("#floating-cart");
+  const floatingCount = $("#floating-cart-count");
+  floatingCount.textContent = count;
+  floatingCart.classList.toggle("hidden", count === 0);
+  floatingCart.setAttribute("aria-label", `Abrir carrito (${count} productos)`);
 }
 
 // ============================================================
 // CARRITO
 // ============================================================
-$("#btn-cart").addEventListener("click", () => {
+function openCart() {
   if (cart.length === 0) {
     showToast("Tu carrito está vacío");
     return;
   }
   renderCart();
   openModal("#modal-cart");
-});
+}
+
+$("#btn-cart").addEventListener("click", openCart);
+$("#floating-cart")?.addEventListener("click", openCart);
 
 function cartSubtotal() {
   return cart.reduce((sum, c) => sum + c.product.price * c.qty, 0);
@@ -409,6 +522,7 @@ async function refreshWalletUI() {
   if (!error && data) {
     currentUser.wallet_balance = data.wallet_balance;
     $("#wallet-balance").textContent = money(data.wallet_balance);
+    saveSession();
   }
 }
 
@@ -449,3 +563,5 @@ async function loadTransactions() {
     list.appendChild(row);
   });
 }
+
+restoreSession();

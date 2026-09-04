@@ -73,8 +73,9 @@ window.onerror = function(msg, url, line, col, error) {
       <div class="wallet-card">
         <p class="eyebrow">Saldo disponible</p>
         <p class="wallet-amount">$<span id="wallet-balance">0.00</span></p>
-        <p class="wallet-hint">Ganas cashback cada vez que compras y lo recoges en caja.</p>
+        <p class="wallet-hint">Tu saldo se queda en la app y solo sirve para pagar futuras compras en Mila Café. No se entrega en efectivo.</p>
       </div>
+      <button id="btn-logout" class="btn btn-secondary btn-block account-logout" type="button">Cerrar sesión</button>
       <h3 class="section-title">Historial</h3>
       <div id="transactions-list" class="tx-list">
         <p class="loading-text">Cargando historial…</p>
@@ -140,6 +141,12 @@ window.onerror = function(msg, url, line, col, error) {
 
   <!-- Toast de notificaciones -->
   <div id="toast" class="toast hidden"></div>
+
+  <button id="floating-cart" class="floating-cart hidden" type="button" aria-label="Abrir carrito">
+    <span class="floating-cart-icon" aria-hidden="true">🛒</span>
+    <span>Carrito</span>
+    <span id="floating-cart-count" class="floating-cart-count">0</span>
+  </button>
 
   <script src="main.js"></script>
 </body>
