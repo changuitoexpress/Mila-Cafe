@@ -270,6 +270,7 @@ async function loadProducts() {
       const card = document.createElement("div");
       card.className = "product-card";
       card.innerHTML = `
+        ${p.image_url ? `<img class="product-image" src="${p.image_url}" alt="${p.name}" loading="lazy" onerror="this.style.display='none'">` : ""}
         <span class="cat">${p.category || "Café"}</span>
         <h3>${p.name}</h3>
         <p class="desc">${p.description || ""}</p>
