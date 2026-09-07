@@ -47,15 +47,33 @@ window.onerror = function(msg, url, line, col, error) {
   <div id="app" class="app hidden">
 
     <header class="topbar">
-      <div class="topbar-brand">Mila<span>Café</span></div>
+      <div class="topbar-leading">
+        <button id="menu-toggle" class="menu-toggle" type="button" aria-label="Abrir menú" aria-expanded="false" aria-controls="side-menu">☰</button>
+        <div class="topbar-brand">Mila<span>Café</span></div>
+      </div>
       <nav class="tabs">
         <button class="tab active" data-tab="menu">Menú</button>
         <button class="tab" data-tab="cuenta">Mi cuenta</button>
       </nav>
-      <button id="btn-cart" class="cart-btn">
-        🛍️ <span id="cart-count" class="cart-count hidden">0</span>
-      </button>
+      <div class="topbar-actions">
+        <button id="btn-cart" class="cart-btn" type="button" aria-label="Abrir carrito">
+          🛍️ <span id="cart-count" class="cart-count hidden">0</span>
+        </button>
+      </div>
     </header>
+    <nav id="category-chips" class="category-chips hidden" aria-label="Categorías del menú"></nav>
+
+    <div id="menu-backdrop" class="menu-backdrop hidden"></div>
+    <aside id="side-menu" class="side-menu hidden" aria-label="Menú principal">
+      <div class="side-menu-header">
+        <strong>Explorar Mila Café</strong>
+        <button id="menu-close" class="menu-close" type="button" aria-label="Cerrar menú">×</button>
+      </div>
+      <div id="category-menu-list" class="category-menu-list"></div>
+      <button id="menu-favorites" class="side-menu-item" type="button">♡ Favoritos</button>
+      <a id="admin-dashboard-link" class="side-menu-item admin-link hidden" href="dashboard.html">Panel de administración</a>
+      <button id="menu-logout" class="side-menu-item side-menu-logout" type="button">Cerrar sesión</button>
+    </aside>
 
     <!-- ============ VISTA: MENÚ ============ -->
     <section id="view-menu" class="view active">
@@ -76,6 +94,7 @@ window.onerror = function(msg, url, line, col, error) {
         <p class="wallet-hint">Tu saldo se queda en la app y solo sirve para pagar futuras compras en Mila Café. No se entrega en efectivo.</p>
       </div>
       <button id="btn-logout" class="btn btn-secondary btn-block account-logout" type="button">Cerrar sesión</button>
+      <a id="admin-dashboard-account" class="btn btn-primary btn-block account-admin-link hidden" href="dashboard.html">Panel de administración</a>
       <h3 class="section-title">Historial</h3>
       <div id="transactions-list" class="tx-list">
         <p class="loading-text">Cargando historial…</p>
@@ -112,6 +131,25 @@ window.onerror = function(msg, url, line, col, error) {
         <label class="payment-option"><input type="radio" name="payment" value="Transferencia"><span>Transferencia</span></label>
         <label class="payment-option"><input type="radio" name="payment" value="Retiro sin tarjeta"><span>Retiro sin tarjeta</span></label>
         <label class="payment-option"><input type="radio" name="payment" value="Terminal (tarjeta)"><span>Terminal (tarjeta)</span></label>
+      </div>
+
+      <div class="delivery-section">
+        <h4 class="payment-title">Entrega</h4>
+        <div class="delivery-options">
+          <label class="payment-option"><input type="radio" name="delivery_type" value="pickup" checked><span>Pasar a recoger</span></label>
+          <label class="payment-option"><input type="radio" name="delivery_type" value="delivery"><span>Envío a domicilio</span></label>
+        </div>
+        <div id="delivery-fields" class="delivery-fields hidden">
+          <label class="field-label" for="delivery-fraccionamiento">Fraccionamiento</label>
+          <input id="delivery-fraccionamiento" class="input" type="text" autocomplete="address-level2" />
+          <label class="field-label" for="delivery-calle">Calle</label>
+          <input id="delivery-calle" class="input" type="text" autocomplete="street-address" />
+          <label class="field-label" for="delivery-numero">Número</label>
+          <input id="delivery-numero" class="input" type="text" autocomplete="address-line1" />
+          <label class="field-label" for="delivery-referencias">Referencias</label>
+          <textarea id="delivery-referencias" class="input" rows="2"></textarea>
+          <p id="delivery-error" class="error-text"></p>
+        </div>
       </div>
 
       <div class="cart-summary">

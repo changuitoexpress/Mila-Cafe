@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <script>
+    document.title = "Panel Mila Café";
+    window.onerror = function(msg, url, line) {
+      document.body.insertAdjacentHTML("afterbegin", '<div class="dashboard-runtime-error">ERROR JS: ' + msg + " (línea " + line + ")</div>");
+      return false;
+    };
+  </script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mila Café — Panel de administración</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,0..144,500&family=Work+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="dashboard-page">
+  <header class="dashboard-topbar">
+    <a class="dashboard-brand" href="index.html">Mila<span>Café</span></a>
+    <div class="dashboard-topbar-actions">
+      <span id="admin-name" class="admin-name"></span>
+      <button id="dashboard-logout" class="dashboard-logout" type="button">Cerrar sesión</button>
+    </div>
+  </header>
+
+  <main class="dashboard-shell">
+    <section id="dashboard-access" class="dashboard-access">
+      <p class="eyebrow">Panel privado</p>
+      <h1>Acceso de administración</h1>
+      <p id="dashboard-access-message">Comprobando permisos…</p>
+      <a class="btn btn-primary" href="index.html">Volver al menú</a>
+    </section>
+
+    <div id="dashboard-content" class="hidden">
+      <div class="dashboard-heading">
+        <div>
+          <p class="eyebrow">Operación diaria</p>
+          <h1>Pedidos y ventas</h1>
+        </div>
+        <div class="dashboard-refresh">
+          <span id="last-updated">Actualizando…</span>
+          <button id="refresh-dashboard" class="btn btn-secondary" type="button">Actualizar</button>
+        </div>
+      </div>
+
+      <section class="stats-grid" aria-label="Resumen del día">
+        <article class="stat-card">
+          <span>Ventas de hoy</span>
+          <strong id="stat-sales">$0.00</strong>
+          <small>Pedidos completados</small>
+        </article>
+        <article class="stat-card">
+          <span>Pedidos de hoy</span>
+          <strong id="stat-orders">0</strong>
+          <small>Todos los estados</small>
+        </article>
+        <article class="stat-card stat-pending">
+          <span>Pendientes</span>
+          <strong id="stat-pending">0</strong>
+          <small>Por validar</small>
+        </article>
+        <article class="stat-card stat-completed">
+          <span>Completados</span>
+          <strong id="stat-completed">0</strong>
+          <small>Cashback abonado por RPC</small>
+        </article>
+      </section>
+
+      <section class="orders-panel">
+        <div class="orders-toolbar">
+          <div>
+            <p class="eyebrow">Seguimiento</p>
+            <h2>Todos los pedidos</h2>
+          </div>
+          <div class="filter-row">
+            <label>Estado
+              <select id="status-filter" class="dashboard-select">
+                <option value="all">Todos</option>
+                <option value="pending">Pendientes</option>
+                <option value="completed">Completados</option>
+                <option value="cancelled">Cancelados</option>
+              </select>
+            </label>
+            <label>Entrega
+              <select id="delivery-filter" class="dashboard-select">
+                <option value="all">Todos</option>
+                <option value="pickup">Pickup</option>
+                <option value="delivery">Domicilio</option>
+              </select>
+            </label>
+          </div>
+        </div>
+        <p id="dashboard-feedback" class="dashboard-feedback"></p>
+        <div id="orders-list" class="orders-list"></div>
+      </section>
+    </div>
+  </main>
+
+  <script src="dashboard.js"></script>
+</body>
+</html>

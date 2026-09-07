@@ -39,6 +39,7 @@ let products = [];        // catálogo cargado desde Supabase
 let cart = [];             // [{ product, qty }]
 let activeProduct = null;  // producto abierto en el modal de detalle
 let activeQty = 1;
+let favoriteProductIds = new Set();
 
 // ============================================================
 // UTILIDADES
@@ -69,6 +70,20 @@ $$("[data-close]").forEach((btn) =>
 // ============================================================
 $("#btn-login").addEventListener("click", handleLogin);
 $("#btn-logout")?.addEventListener("click", handleLogout);
+$("#menu-toggle")?.addEventListener("click", openMenu);
+$("#menu-close")?.addEventListener("click", closeMenu);
+$("#menu-backdrop")?.addEventListener("click", closeMenu);
+$("#menu-logout")?.addEventListener("click", () => {
+  closeMenu();
+  handleLogout();
+});
+$("#menu-favorites")?.addEventListener("click", () => {
+  closeMenu();
+  scrollToSection("favorites-section");
+});
+$$('input[name="delivery_type"]').forEach((input) =>
+  input.addEventListener("change", toggleDeliveryFields)
+);
 
 async function handleLogin() {
   let errorEl;
@@ -125,13 +140,15 @@ async function handleLogin() {
   }
 }
 
-function startApp() {
+async function startApp() {
   $("#view-login").classList.remove("active");
   $("#app").classList.remove("hidden");
   $$(".tab").forEach((tab) => tab.classList.toggle("active", tab.dataset.tab === "menu"));
   $$(".view").forEach((view) => view.classList.toggle("active", view.id === "view-menu"));
   $("#user-name-tag").textContent = currentUser.name || "Cliente Mila";
-  loadProducts();
+  updateAdminLinks();
+  await loadFavorites();
+  await loadProducts();
   refreshWalletUI();
 }
 
@@ -146,6 +163,7 @@ function saveSession() {
         phone: currentUser.phone,
         name: currentUser.name || "Cliente Mila",
         wallet_balance: currentUser.wallet_balance || 0,
+        is_admin: currentUser.is_admin === true,
       })
     );
   } catch (err) {
@@ -177,12 +195,56 @@ function handleLogout() {
   currentUser = null;
   products = [];
   cart = [];
+  favoriteProductIds = new Set();
+  closeMenu();
   updateCartBadge();
   $("#app").classList.add("hidden");
   $("#view-login").classList.add("active");
   $("#phone-input").value = "";
   $("#name-input").value = "";
   $("#login-error").textContent = "";
+}
+
+function updateAdminLinks() {
+  const isAdmin = currentUser?.is_admin === true;
+  ["#admin-dashboard-link", "#admin-dashboard-account"].forEach((selector) => {
+    $(selector)?.classList.toggle("hidden", !isAdmin);
+  });
+}
+
+function openMenu() {
+  $("#side-menu")?.classList.remove("hidden");
+  $("#menu-backdrop")?.classList.remove("hidden");
+  $("#menu-toggle")?.setAttribute("aria-expanded", "true");
+}
+
+function closeMenu() {
+  $("#side-menu")?.classList.add("hidden");
+  $("#menu-backdrop")?.classList.add("hidden");
+  $("#menu-toggle")?.setAttribute("aria-expanded", "false");
+}
+
+function scrollToSection(sectionId) {
+  const section = document.getElementById(sectionId);
+  section?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function toggleDeliveryFields() {
+  const selected = document.querySelector('input[name="delivery_type"]:checked')?.value;
+  $("#delivery-fields")?.classList.toggle("hidden", selected !== "delivery");
+  if (selected !== "delivery") {
+    $("#delivery-error") && ($("#delivery-error").textContent = "");
+  }
+}
+
+function slugify(value, index) {
+  const slug = String(value)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+  return `category-${slug || "otros"}-${index}`;
 }
 
 // ============================================================
@@ -204,6 +266,143 @@ $$(".tab").forEach((tab) =>
 // ============================================================
 // MENÚ — carga y pinta los productos
 // ============================================================
+async function loadFavorites() {
+  favoriteProductIds = new Set();
+  if (!currentUser?.id) return;
+
+  const { data, error } = await supabaseClient
+    .from("favorites")
+    .select("product_id")
+    .eq("user_id", currentUser.id);
+
+  if (error) {
+    console.warn("No se pudieron cargar los favoritos:", error);
+    return;
+  }
+
+  favoriteProductIds = new Set((data || []).map((favorite) => favorite.product_id));
+}
+
+function renderCategoryNavigation(categories) {
+  const chips = $("#category-chips");
+  const menuList = $("#category-menu-list");
+  if (!chips || !menuList) return;
+
+  chips.innerHTML = "";
+  menuList.innerHTML = "";
+  chips.classList.toggle("hidden", categories.length === 0);
+
+  categories.forEach((category, index) => {
+    const sectionId = slugify(category, index);
+    const chip = document.createElement("button");
+    chip.className = "category-chip";
+    chip.type = "button";
+    chip.textContent = category;
+    chip.addEventListener("click", () => scrollToSection(sectionId));
+    chips.appendChild(chip);
+
+    const menuItem = document.createElement("button");
+    menuItem.className = "side-menu-item";
+    menuItem.type = "button";
+    menuItem.textContent = category;
+    menuItem.addEventListener("click", () => {
+      closeMenu();
+      scrollToSection(sectionId);
+    });
+    menuList.appendChild(menuItem);
+  });
+
+  const favoriteChip = document.createElement("button");
+  favoriteChip.className = "category-chip category-chip-favorites";
+  favoriteChip.type = "button";
+  favoriteChip.textContent = "♡ Favoritos";
+  favoriteChip.addEventListener("click", () => scrollToSection("favorites-section"));
+  chips.appendChild(favoriteChip);
+}
+
+function renderProductCard(product) {
+  const card = document.createElement("div");
+  card.className = "product-card";
+  const isFavorite = favoriteProductIds.has(product.id);
+  card.innerHTML = `
+    ${product.image_url ? `<img class="product-image" src="${product.image_url}" alt="${product.name}" loading="lazy" onerror="this.style.display='none'">` : ""}
+    <button class="favorite-btn ${isFavorite ? "is-favorite" : ""}" type="button" aria-label="${isFavorite ? "Quitar de favoritos" : "Agregar a favoritos"}">${isFavorite ? "♥" : "♡"}</button>
+    <span class="cat">${product.category || "Café"}</span>
+    <h3>${product.name}</h3>
+    <p class="desc">${product.description || ""}</p>
+    <div class="price-row">
+      <span class="price">$${money(product.price)}</span>
+      <span class="cashback-badge">Gana $${money((product.price * product.cashback_percent) / 100)} aquí</span>
+    </div>
+  `;
+  card.addEventListener("click", () => openProductModal(product));
+  card.querySelector(".favorite-btn").addEventListener("click", (event) => {
+    event.stopPropagation();
+    toggleFavorite(product, event.currentTarget);
+  });
+  return card;
+}
+
+async function toggleFavorite(product, button) {
+  if (!currentUser?.id || button.disabled) return;
+
+  const wasFavorite = favoriteProductIds.has(product.id);
+  button.disabled = true;
+  const response = wasFavorite
+    ? await supabaseClient
+        .from("favorites")
+        .delete()
+        .eq("user_id", currentUser.id)
+        .eq("product_id", product.id)
+    : await supabaseClient
+        .from("favorites")
+        .insert({ user_id: currentUser.id, product_id: product.id });
+
+  button.disabled = false;
+  if (response.error) {
+    console.error("No se pudo actualizar el favorito:", response.error);
+    showToast("No se pudo actualizar favoritos");
+    return;
+  }
+
+  if (wasFavorite) favoriteProductIds.delete(product.id);
+  else favoriteProductIds.add(product.id);
+  button.classList.toggle("is-favorite", !wasFavorite);
+  button.textContent = wasFavorite ? "♡" : "♥";
+  button.setAttribute("aria-label", wasFavorite ? "Agregar a favoritos" : "Quitar de favoritos");
+  renderFavoritesSection();
+}
+
+function renderFavoritesSection() {
+  const previous = $("#favorites-section");
+  previous?.remove();
+
+  const section = document.createElement("section");
+  section.id = "favorites-section";
+  section.className = "category-group favorites-group";
+  const favorites = products.filter((product) => favoriteProductIds.has(product.id));
+  section.innerHTML = `
+    <div class="category-heading">
+      <h3>Favoritos</h3>
+      <span>${favorites.length} productos</span>
+    </div>
+  `;
+
+  if (favorites.length === 0) {
+    section.insertAdjacentHTML(
+      "beforeend",
+      '<div class="menu-status menu-empty"><strong>Aún no tienes favoritos.</strong><p>Toca el corazón de un producto para guardarlo aquí.</p></div>'
+    );
+  } else {
+    const favoritesGrid = document.createElement("div");
+    favoritesGrid.className = "category-products";
+    favorites.forEach((product) => favoritesGrid.appendChild(renderProductCard(product)));
+    section.appendChild(favoritesGrid);
+  }
+
+  $("#products-grid")?.appendChild(section);
+}
+
 async function loadProducts() {
   const grid = $("#products-grid");
   let { data, error } = await supabaseClient
@@ -249,14 +448,19 @@ async function loadProducts() {
 
   const groupedProducts = new Map();
   products.forEach((product) => {
-    const category = (product.category || "Otros").trim() || "Otros";
+    const category = String(product.category || "Otros").trim() || "Otros";
     if (!groupedProducts.has(category)) groupedProducts.set(category, []);
     groupedProducts.get(category).push(product);
   });
 
-  groupedProducts.forEach((categoryProducts, category) => {
+  const categories = [...groupedProducts.keys()];
+  renderCategoryNavigation(categories);
+
+  groupedProducts.forEach((categoryProducts, category, map) => {
+    const categoryIndex = [...map.keys()].indexOf(category);
     const group = document.createElement("section");
     group.className = "category-group";
+    group.id = slugify(category, categoryIndex);
 
     const heading = document.createElement("div");
     heading.className = "category-heading";
@@ -266,27 +470,13 @@ async function loadProducts() {
     const categoryGrid = document.createElement("div");
     categoryGrid.className = "category-products";
 
-    categoryProducts.forEach((p) => {
-      const card = document.createElement("div");
-      card.className = "product-card";
-      card.innerHTML = `
-        ${p.image_url ? `<img class="product-image" src="${p.image_url}" alt="${p.name}" loading="lazy" onerror="this.style.display='none'">` : ""}
-        <span class="cat">${p.category || "Café"}</span>
-        <h3>${p.name}</h3>
-        <p class="desc">${p.description || ""}</p>
-        <div class="price-row">
-          <span class="price">$${money(p.price)}</span>
-          <span class="cashback-badge">Gana $${money((p.price * p.cashback_percent) / 100)} aquí</span>
-        </div>
-      `;
-      card.addEventListener("click", () => openProductModal(p));
-      categoryGrid.appendChild(card);
-    });
+    categoryProducts.forEach((product) => categoryGrid.appendChild(renderProductCard(product)));
 
     group.appendChild(heading);
     group.appendChild(categoryGrid);
     grid.appendChild(group);
   });
+  renderFavoritesSection();
 }
 
 function openProductModal(product) {
@@ -398,6 +588,7 @@ function renderCart() {
   $("#wallet-toggle-row").classList.toggle("hidden", walletAvailable <= 0);
   $("#wallet-available-amount").textContent = `$${money(walletAvailable)}`;
   $("#use-wallet-checkbox").checked = false;
+  toggleDeliveryFields();
 
   updateCartSummary();
 }
@@ -431,16 +622,39 @@ async function handleCheckout() {
   const walletAvailable = Number(currentUser.wallet_balance || 0);
   const walletUsed = useWallet ? Math.min(subtotal, walletAvailable) : 0;
   const paymentMethod = document.querySelector('input[name="payment"]:checked').value;
+  const deliveryType = document.querySelector('input[name="delivery_type"]:checked')?.value || "pickup";
+  const delivery = {
+    fraccionamiento: $("#delivery-fraccionamiento")?.value.trim() || "",
+    calle: $("#delivery-calle")?.value.trim() || "",
+    numero: $("#delivery-numero")?.value.trim() || "",
+    referencias: $("#delivery-referencias")?.value.trim() || "",
+  };
 
   // Guardamos una copia de los items del carrito ANTES de vaciarlo,
   // porque los necesitamos para armar el mensaje de WhatsApp.
   const cartSnapshot = cart.map((c) => ({ name: c.product.name, qty: c.qty, price: c.product.price }));
 
+  if (deliveryType === "delivery" && Object.values(delivery).some((value) => !value)) {
+    $("#delivery-error").textContent = "Completa todos los datos de entrega.";
+    $("#delivery-fields")?.classList.remove("hidden");
+    return;
+  }
+  $("#delivery-error") && ($("#delivery-error").textContent = "");
+
   try {
     // 1. Crear la orden (pending)
     const { data: order, error: orderErr } = await supabaseClient
       .from("orders")
-      .insert({ user_id: currentUser.id, wallet_used: walletUsed, payment_method: paymentMethod })
+      .insert({
+        user_id: currentUser.id,
+        wallet_used: walletUsed,
+        payment_method: paymentMethod,
+        delivery_type: deliveryType,
+        fraccionamiento: deliveryType === "delivery" ? delivery.fraccionamiento : null,
+        calle: deliveryType === "delivery" ? delivery.calle : null,
+        numero: deliveryType === "delivery" ? delivery.numero : null,
+        referencias: deliveryType === "delivery" ? delivery.referencias : null,
+      })
       .select()
       .single();
     if (orderErr) throw orderErr;
@@ -490,6 +704,12 @@ function buildWhatsappMessage(order) {
   if (order.wallet_used > 0) lines.push(`Saldo de monedero aplicado: -$${money(order.wallet_used)}`);
   lines.push(`*Total a pagar: $${money(order.total)}*`);
   lines.push(`Forma de pago: ${order.payment_method}`);
+  if (order.delivery_type === "delivery") {
+    lines.push(`Entrega a domicilio: ${order.fraccionamiento}, calle ${order.calle}, número ${order.numero}`);
+    lines.push(`Referencias: ${order.referencias}`);
+  } else {
+    lines.push("Entrega: Pasar a recoger");
+  }
   lines.push(`Cashback que ganará: $${money(order.cashback_earned)}`);
   lines.push(`Código de ticket: ${order.qr_token}`);
   return lines.join("\n");
@@ -502,6 +722,7 @@ function showTicket(order) {
     <div class="row"><span>Total a pagar</span><span>$${money(order.total)}</span></div>
     <div class="row"><span>Saldo aplicado</span><span>-$${money(order.wallet_used)}</span></div>
     <div class="row"><span>Forma de pago</span><span>${order.payment_method}</span></div>
+    <div class="row"><span>Entrega</span><span>${order.delivery_type === "delivery" ? "A domicilio" : "Pasar a recoger"}</span></div>
     <div class="row"><span>Cashback que ganarás</span><span>+$${money(order.cashback_earned)}</span></div>
   `;
 
@@ -517,13 +738,17 @@ function showTicket(order) {
 async function refreshWalletUI() {
   const { data, error } = await supabaseClient
     .from("profiles")
-    .select("wallet_balance")
+    .select("wallet_balance, is_admin, name, phone")
     .eq("id", currentUser.id)
     .single();
   if (!error && data) {
     currentUser.wallet_balance = data.wallet_balance;
+    currentUser.is_admin = data.is_admin === true;
+    currentUser.name = data.name || currentUser.name;
+    currentUser.phone = data.phone || currentUser.phone;
     $("#wallet-balance").textContent = money(data.wallet_balance);
     saveSession();
+    updateAdminLinks();
   }
 }
 
