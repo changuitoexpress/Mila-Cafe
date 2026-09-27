@@ -1,0 +1,14 @@
+"Necesito rediseñar la interfaz del menú de Mila Café para que se parezca lo más posible a la app de Uber Eats (mando de referencia el estilo exacto que quiero imitar). Cambios de diseño, sin tocar la lógica ni las conexiones a Supabase:
+1. Header superior tipo Uber Eats.
+Barra superior con: flecha de regresar a la izquierda, nombre 'Mila Café' centrado o a la izquierda, e íconos de búsqueda y favoritos a la derecha. Debajo, una fila de pestañas horizontales con scroll (tipo 'Explora el menú', 'Bebidas Frías', 'Salado', 'Bakery', 'Signature Brews', 'Bebidas calientes', 'Protein Shakes', etc. — usa las categorías reales de la tabla products), donde la pestaña activa se marca con una línea negra debajo y las demás quedan en gris. Al tocar una pestaña, debe hacer scroll directo a esa sección (mismo comportamiento que ya tenían los 'chips', solo cambia el estilo visual a este formato de pestañas).
+2. Tarjetas de producto en cuadrícula de 2 columnas.
+Cada producto se muestra como una tarjeta con: foto grande arriba (ocupando casi todo el ancho de la tarjeta, esquinas redondeadas), nombre del producto debajo en negro y negritas, precio debajo del nombre, y un botón circular blanco con un '+' en la esquina inferior derecha de la foto para agregar al carrito directo desde la tarjeta (sin necesidad de abrir un modal, aunque si ya tienen modal de detalle, se puede mantener y que el '+' simplemente agregue la versión base del producto).
+3. Secciones con encabezado de categoría.
+Antes de cada grupo de tarjetas, un título grande en negritas con el nombre de la categoría (ej. 'Bebidas Frías', 'Bakery'), igual que en las capturas de referencia.
+4. Sección 'Explora el menú' con filtros tipo chip.
+Arriba de todo (antes de las categorías), agrega chips redondeados tipo píldora: 'Destacados', y opcionalmente otros que consideres útiles para una cafetería (ej. 'Sin azúcar', 'Bebidas frías', etc.) — estilo idéntico al de las capturas (fondo negro para el chip activo, fondo gris claro para los demás).
+5. Colores y tipografía.
+Mantén la paleta de colores que ya tiene Mila Café (los tonos cafés/crema de la marca), no la cambies a los colores de Uber Eats — solo copia la ESTRUCTURA y disposición visual (layout, tamaños de tarjeta, tipografía en negritas para nombres, espaciados), no la marca ni los colores de Uber.
+6. Mantén toda la funcionalidad ya construida.
+No rompas nada de lo ya implementado: favoritos, menú hamburguesa, checkout, selector de pickup/delivery, dashboard de admin, etc. Este cambio es puramente visual/estructural en la pantalla del menú principal.
+Haz commit y push a main cuando termines. Confírmame qué archivos modificaste."
