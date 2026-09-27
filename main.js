@@ -40,6 +40,7 @@ let cart = [];             // [{ product, qty }]
 let activeProduct = null;  // producto abierto en el modal de detalle
 let activeQty = 1;
 let favoriteProductIds = new Set();
+let categoryObserver = null;
 
 // ============================================================
 // UTILIDADES
@@ -81,6 +82,8 @@ $("#menu-favorites")?.addEventListener("click", () => {
   closeMenu();
   scrollToSection("favorites-section");
 });
+$("#header-back")?.addEventListener("click", () => window.history.back());
+$("#header-favorites")?.addEventListener("click", () => scrollToSection("favorites-section"));
 $$('input[name="delivery_type"]').forEach((input) =>
   input.addEventListener("change", toggleDeliveryFields)
 );
@@ -226,6 +229,7 @@ function closeMenu() {
 
 function scrollToSection(sectionId) {
   const section = document.getElementById(sectionId);
+  setActiveCategoryTab(sectionId);
   section?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
@@ -292,11 +296,20 @@ function renderCategoryNavigation(categories) {
   menuList.innerHTML = "";
   chips.classList.toggle("hidden", categories.length === 0);
 
+  const exploreTab = document.createElement("button");
+  exploreTab.className = "category-chip category-tab active";
+  exploreTab.type = "button";
+  exploreTab.dataset.section = "menu-top";
+  exploreTab.textContent = "Explora el menú";
+  exploreTab.addEventListener("click", () => scrollToSection("menu-top"));
+  chips.appendChild(exploreTab);
+
   categories.forEach((category, index) => {
     const sectionId = slugify(category, index);
     const chip = document.createElement("button");
-    chip.className = "category-chip";
+    chip.className = "category-chip category-tab";
     chip.type = "button";
+    chip.dataset.section = sectionId;
     chip.textContent = category;
     chip.addEventListener("click", () => scrollToSection(sectionId));
     chips.appendChild(chip);
@@ -313,11 +326,43 @@ function renderCategoryNavigation(categories) {
   });
 
   const favoriteChip = document.createElement("button");
-  favoriteChip.className = "category-chip category-chip-favorites";
+  favoriteChip.className = "category-chip category-tab category-chip-favorites";
   favoriteChip.type = "button";
+  favoriteChip.dataset.section = "favorites-section";
   favoriteChip.textContent = "♡ Favoritos";
   favoriteChip.addEventListener("click", () => scrollToSection("favorites-section"));
   chips.appendChild(favoriteChip);
+}
+
+function setActiveCategoryTab(sectionId) {
+  $$(".category-tab").forEach((tab) => {
+    tab.classList.toggle("active", tab.dataset.section === sectionId);
+  });
+}
+
+function observeCategorySections(categories) {
+  categoryObserver?.disconnect();
+  if (!("IntersectionObserver" in window)) return;
+
+  const sectionIds = [
+    "menu-top",
+    ...categories.map((category, index) => slugify(category, index)),
+    "favorites-section",
+  ];
+  categoryObserver = new IntersectionObserver(
+    (entries) => {
+      const visible = entries
+        .filter((entry) => entry.isIntersecting)
+        .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+      if (visible[0]) setActiveCategoryTab(visible[0].target.id);
+    },
+    { rootMargin: "-132px 0px -60% 0px", threshold: [0, 0.1, 0.4] }
+  );
+
+  sectionIds
+    .map((id) => document.getElementById(id))
+    .filter(Boolean)
+    .forEach((section) => categoryObserver.observe(section));
 }
 
 function renderProductCard(product) {
@@ -325,8 +370,11 @@ function renderProductCard(product) {
   card.className = "product-card";
   const isFavorite = favoriteProductIds.has(product.id);
   card.innerHTML = `
-    ${product.image_url ? `<img class="product-image" src="${product.image_url}" alt="${product.name}" loading="lazy" onerror="this.style.display='none'">` : ""}
-    <button class="favorite-btn ${isFavorite ? "is-favorite" : ""}" type="button" aria-label="${isFavorite ? "Quitar de favoritos" : "Agregar a favoritos"}">${isFavorite ? "♥" : "♡"}</button>
+    <div class="product-image-wrap">
+      ${product.image_url ? `<img class="product-image" src="${product.image_url}" alt="${product.name}" loading="lazy" onerror="this.style.display='none'">` : '<div class="product-image-placeholder"></div>'}
+      <button class="favorite-btn ${isFavorite ? "is-favorite" : ""}" type="button" aria-label="${isFavorite ? "Quitar de favoritos" : "Agregar a favoritos"}">${isFavorite ? "♥" : "♡"}</button>
+      <button class="quick-add-btn" type="button" aria-label="Agregar ${product.name} al carrito">+</button>
+    </div>
     <span class="cat">${product.category || "Café"}</span>
     <h3>${product.name}</h3>
     <p class="desc">${product.description || ""}</p>
@@ -339,6 +387,11 @@ function renderProductCard(product) {
   card.querySelector(".favorite-btn").addEventListener("click", (event) => {
     event.stopPropagation();
     toggleFavorite(product, event.currentTarget);
+  });
+  card.querySelector(".quick-add-btn").addEventListener("click", (event) => {
+    event.stopPropagation();
+    addProductToCart(product, 1);
+    showToast(`${product.name} agregado al carrito`);
   });
   return card;
 }
@@ -477,6 +530,7 @@ async function loadProducts() {
     grid.appendChild(group);
   });
   renderFavoritesSection();
+  observeCategorySections(categories);
 }
 
 function openProductModal(product) {
@@ -522,14 +576,18 @@ function renderProductModal() {
   $("#btn-add-cart").addEventListener("click", addToCart);
 }
 
-function addToCart() {
-  const existing = cart.find((c) => c.product.id === activeProduct.id);
+function addProductToCart(product, quantity = 1) {
+  const existing = cart.find((c) => c.product.id === product.id);
   if (existing) {
-    existing.qty += activeQty;
+    existing.qty += quantity;
   } else {
-    cart.push({ product: activeProduct, qty: activeQty });
+    cart.push({ product, qty: quantity });
   }
   updateCartBadge();
+}
+
+function addToCart() {
+  addProductToCart(activeProduct, activeQty);
   closeModal("#modal-product");
   showToast(`${activeProduct.name} agregado al carrito`);
 }

@@ -48,7 +48,12 @@ window.onerror = function(msg, url, line, col, error) {
 
     <header class="topbar">
       <div class="topbar-leading">
-        <button id="menu-toggle" class="menu-toggle" type="button" aria-label="Abrir menú" aria-expanded="false" aria-controls="side-menu">☰</button>
+        <button id="header-back" class="header-icon-button header-back" type="button" aria-label="Regresar">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 8 12l7 7M9 12h11"></path></svg>
+        </button>
+        <button id="menu-toggle" class="menu-toggle" type="button" aria-label="Abrir menú" aria-expanded="false" aria-controls="side-menu">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg>
+        </button>
         <div class="topbar-brand">Mila<span>Café</span></div>
       </div>
       <nav class="tabs">
@@ -56,8 +61,15 @@ window.onerror = function(msg, url, line, col, error) {
         <button class="tab" data-tab="cuenta">Mi cuenta</button>
       </nav>
       <div class="topbar-actions">
+        <button id="header-search" class="header-icon-button" type="button" aria-label="Buscar en el menú">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.3"></circle><path d="m16 16 4.5 4.5"></path></svg>
+        </button>
+        <button id="header-favorites" class="header-icon-button" type="button" aria-label="Ver favoritos">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 8.8c0 5-8.8 10-8.8 10s-8.8-5-8.8-10A4.8 4.8 0 0 1 12 6a4.8 4.8 0 0 1 8.8 2.8Z"></path></svg>
+        </button>
         <button id="btn-cart" class="cart-btn" type="button" aria-label="Abrir carrito">
-          🛍️ <span id="cart-count" class="cart-count hidden">0</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1 12H6L5 8ZM9 8a3 3 0 0 1 6 0"></path></svg>
+          <span id="cart-count" class="cart-count hidden">0</span>
         </button>
       </div>
     </header>
@@ -79,7 +91,10 @@ window.onerror = function(msg, url, line, col, error) {
     <section id="view-menu" class="view active">
       <div class="menu-intro">
         <p class="eyebrow">Hola, <span id="user-name-tag">—</span></p>
-        <h2>¿Qué se te antoja hoy?</h2>
+        <h2 id="menu-top">Explora el menú</h2>
+        <div class="menu-filters" aria-label="Filtros del menú">
+          <button class="menu-filter active" type="button">Destacados</button>
+        </div>
       </div>
       <div id="products-grid" class="products-grid">
         <p class="loading-text">Cargando menú…</p>
@@ -181,7 +196,9 @@ window.onerror = function(msg, url, line, col, error) {
   <div id="toast" class="toast hidden"></div>
 
   <button id="floating-cart" class="floating-cart hidden" type="button" aria-label="Abrir carrito">
-    <span class="floating-cart-icon" aria-hidden="true">🛒</span>
+    <span class="floating-cart-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><path d="M5 8h14l-1 12H6L5 8ZM9 8a3 3 0 0 1 6 0"></path></svg>
+    </span>
     <span>Carrito</span>
     <span id="floating-cart-count" class="floating-cart-count">0</span>
   </button>
