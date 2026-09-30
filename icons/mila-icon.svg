@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Mila Café">
+  <rect width="512" height="512" rx="112" fill="#2B1B12"/>
+  <circle cx="256" cy="256" r="190" fill="none" stroke="#B9814A" stroke-width="5" opacity=".7"/>
+  <path d="M146 211h184v90c0 53-39 86-92 86s-92-33-92-86v-90Z" fill="#F6EFE2"/>
+  <path d="M329 231h27c35 0 43 53 6 68-11 4-22 4-33 4" fill="none" stroke="#F6EFE2" stroke-width="22" stroke-linecap="round"/>
+  <path d="M191 155c-19-24 18-28 0-52M239 155c-19-24 18-28 0-52M287 155c-19-24 18-28 0-52" fill="none" stroke="#B9814A" stroke-width="12" stroke-linecap="round"/>
+  <path d="M136 394h229" stroke="#B9814A" stroke-width="12" stroke-linecap="round"/>
+</svg>

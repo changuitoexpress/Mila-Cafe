@@ -4,6 +4,12 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Mila Café — Menú digital</title>
+<meta name="theme-color" content="#2B1B12" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="Mila Café" />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="icon" type="image/svg+xml" href="icons/mila-icon.svg" />
+<link rel="apple-touch-icon" href="icons/mila-icon-192.png" />
 
 <!-- Tipografías: Fraunces (display, con carácter) + Work Sans (texto) + JetBrains Mono (tickets/QR) -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -187,6 +193,14 @@
 
   <!-- Toast de notificaciones -->
   <div id="toast" class="toast hidden"></div>
+  <aside id="install-banner" class="install-banner hidden" aria-label="Instalar Mila Café">
+    <div>
+      <strong>Ten Mila Café a la mano</strong>
+      <p id="install-message"></p>
+    </div>
+    <button id="install-action" class="btn btn-primary hidden" type="button">Instalar</button>
+    <button id="install-dismiss" class="install-dismiss" type="button" aria-label="Cerrar aviso de instalación">×</button>
+  </aside>
 
   <button id="floating-cart" class="floating-cart hidden" type="button" aria-label="Abrir carrito">
     <span class="floating-cart-icon" aria-hidden="true">
@@ -197,5 +211,6 @@
   </button>
 
   <script src="main.js"></script>
+  <script src="pwa.js"></script>
 </body>
 </html>

@@ -386,6 +386,21 @@ body{
   padding:12px 20px; border-radius:999px; font-size:13.5px;
   box-shadow:var(--shadow); z-index:100;
 }
+.install-banner{
+  position:fixed; left:50%; bottom:84px; transform:translateX(-50%);
+  z-index:45; width:min(460px, calc(100vw - 28px));
+  display:flex; align-items:center; gap:12px;
+  padding:13px 38px 13px 16px; background:#fff;
+  border:1px solid var(--cream-2); border-radius:var(--radius-sm);
+  box-shadow:var(--shadow);
+}
+.install-banner strong{ font-size:13px; }
+.install-banner p{ font-size:12px; color:var(--espresso-soft); line-height:1.4; }
+.install-banner .btn{ padding:9px 12px; font-size:12px; white-space:nowrap; }
+.install-dismiss{
+  position:absolute; right:8px; top:6px; border:0;
+  background:transparent; font-size:22px; color:var(--espresso-soft); cursor:pointer;
+}
 
 @media (max-width:420px){
   .floating-cart{ right:14px; bottom:14px; }

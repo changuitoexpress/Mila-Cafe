@@ -1,0 +1,25 @@
+{
+  "name": "Mila Café",
+  "short_name": "Mila Café",
+  "description": "Menú, pedidos y monedero de Mila Café",
+  "lang": "es-MX",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F6EFE2",
+  "theme_color": "#2B1B12",
+  "icons": [
+    {
+      "src": "icons/mila-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/mila-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
