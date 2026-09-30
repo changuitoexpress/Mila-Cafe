@@ -8,6 +8,12 @@ let profileMap = new Map();
 let productMap = new Map();
 let orderItemsMap = new Map();
 let dashboardLoading = false;
+let alertsInitialized = false;
+let seenOrderIds = new Set();
+let realtimeChannel = null;
+let realtimeState = "Conectando en tiempo real";
+let reconnectTimer = null;
+let audioContext = null;
 
 const $ = (selector) => document.querySelector(selector);
 const money = (value) => Number(value || 0).toFixed(2);
@@ -23,6 +29,95 @@ function getSession() {
 
 function setAccessMessage(message) {
   $("#dashboard-access-message").textContent = message;
+}
+
+function updateAlertsStatus() {
+  const sound = audioContext?.state === "running" ? "Sonido activo" : "Activa el sonido con un toque";
+  const notifications = !("Notification" in window)
+    ? "notificaciones no disponibles"
+    : Notification.permission === "granted"
+      ? "notificaciones permitidas"
+      : Notification.permission === "denied"
+        ? "notificaciones bloqueadas en el navegador"
+        : "notificaciones sin permiso";
+  $("#alerts-status").textContent = `${realtimeState} · ${sound} · ${notifications}.`;
+  $("#enable-order-sound").classList.toggle("hidden", audioContext?.state === "running");
+  $("#enable-order-notifications").classList.toggle(
+    "hidden",
+    !("Notification" in window) || Notification.permission !== "default"
+  );
+}
+
+function playNewOrderSound() {
+  if (audioContext?.state !== "running") return;
+  for (let index = 0; index < 3; index += 1) {
+    const start = audioContext.currentTime + index * 0.22;
+    const oscillator = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+    oscillator.type = "sine";
+    oscillator.frequency.value = 660 + index * 110;
+    gain.gain.setValueAtTime(0.001, start);
+    gain.gain.exponentialRampToValueAtTime(0.22, start + 0.025);
+    gain.gain.exponentialRampToValueAtTime(0.001, start + 0.18);
+    oscillator.connect(gain).connect(audioContext.destination);
+    oscillator.start(start);
+    oscillator.stop(start + 0.2);
+  }
+}
+
+function announceNewOrder(order) {
+  const id = String(order?.id || "");
+  if (!id || seenOrderIds.has(id)) return;
+  seenOrderIds.add(id);
+  playNewOrderSound();
+  $("#dashboard-feedback").textContent = `Nuevo pedido #${id.slice(0, 8)}.`;
+  if ("Notification" in window && Notification.permission === "granted") {
+    try {
+      const notification = new Notification("Nuevo pedido — Mila Café", {
+        body: `Pedido #${id.slice(0, 8)}. Abre el panel para revisarlo.`,
+        tag: `mila-order-${id}`,
+        icon: "icons/mila-icon-192.png",
+      });
+      notification.onclick = () => {
+        window.focus();
+        notification.close();
+      };
+    } catch (error) {
+      console.warn("El navegador no permitió mostrar la notificación:", error);
+    }
+  }
+}
+
+function connectOrderAlerts() {
+  if (realtimeChannel) return;
+  realtimeState = "Conectando en tiempo real";
+  updateAlertsStatus();
+  const channel = supabaseDashboardClient
+    .channel("mila-new-orders")
+    .on("postgres_changes", { event: "INSERT", schema: "public", table: "orders" }, (payload) => {
+      if (alertsInitialized) announceNewOrder(payload.new);
+      window.setTimeout(loadDashboard, 100);
+    });
+  realtimeChannel = channel;
+  channel.subscribe((status) => {
+    if (realtimeChannel !== channel) return;
+    if (status === "SUBSCRIBED") {
+      realtimeState = "Avisos en tiempo real conectados";
+      if (reconnectTimer) window.clearTimeout(reconnectTimer);
+      reconnectTimer = null;
+    } else if (["CHANNEL_ERROR", "TIMED_OUT", "CLOSED"].includes(status)) {
+      realtimeState = "Tiempo real no disponible; comprobando pedidos cada 12 segundos";
+      if (!reconnectTimer) {
+        reconnectTimer = window.setTimeout(async () => {
+          reconnectTimer = null;
+          realtimeChannel = null;
+          await supabaseDashboardClient.removeChannel(channel);
+          connectOrderAlerts();
+        }, 15000);
+      }
+    }
+    updateAlertsStatus();
+  });
 }
 
 function isToday(dateValue) {
@@ -211,6 +306,12 @@ async function loadDashboard() {
     if (error) throw error;
 
     allOrders = data || [];
+    if (alertsInitialized) {
+      allOrders.forEach(announceNewOrder);
+    } else {
+      seenOrderIds = new Set(allOrders.map((order) => String(order.id)));
+      alertsInitialized = true;
+    }
     await loadRelatedData(allOrders);
     renderSummary();
     renderOrders();
@@ -251,11 +352,36 @@ async function initDashboard() {
   $("#status-filter").addEventListener("change", renderOrders);
   $("#delivery-filter").addEventListener("change", renderOrders);
   $("#dashboard-logout").addEventListener("click", () => {
+    if (reconnectTimer) window.clearTimeout(reconnectTimer);
+    if (realtimeChannel) supabaseDashboardClient.removeChannel(realtimeChannel);
     localStorage.removeItem(SESSION_STORAGE_KEY);
     window.location.href = "index.html";
   });
+  $("#enable-order-sound").addEventListener("click", async () => {
+    try {
+      audioContext ||= new (window.AudioContext || window.webkitAudioContext)();
+      await audioContext.resume();
+    } catch (error) {
+      console.warn("El navegador no permitió el sonido:", error);
+    }
+    updateAlertsStatus();
+  });
+  $("#enable-order-notifications").addEventListener("click", async () => {
+    try {
+      await Notification.requestPermission();
+    } catch (error) {
+      console.warn("No se pudo solicitar permiso de notificaciones:", error);
+    }
+    updateAlertsStatus();
+  });
+  window.addEventListener("beforeunload", () => {
+    if (reconnectTimer) window.clearTimeout(reconnectTimer);
+    if (realtimeChannel) supabaseDashboardClient.removeChannel(realtimeChannel);
+  });
 
   await loadDashboard();
+  updateAlertsStatus();
+  connectOrderAlerts();
   window.setInterval(loadDashboard, 12000);
 }
 
