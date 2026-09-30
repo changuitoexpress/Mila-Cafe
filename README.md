@@ -32,7 +32,7 @@
    - Marca el ticket como `completed` para que no se pueda volver a usar.
 
 ## Forma de pago y envío del pedido por WhatsApp
-En el carrito, el cliente elige cómo va a pagar (Efectivo, Transferencia, Retiro sin tarjeta o Terminal). Al generar el ticket, aparece un botón verde **"Enviar pedido por WhatsApp"** que abre WhatsApp con un mensaje ya armado: nombre del cliente, cada producto con cantidad y precio, subtotal, saldo aplicado, total, forma de pago y el código del ticket — todo lo manda directo al número del restaurante.
+En el carrito, el cliente elige cómo va a pagar (Efectivo, Transferencia, Pago en línea o Terminal). «Pago en línea» registra el método elegido, pero **todavía no cobra mediante una pasarela**. Al generar el ticket, aparece un botón verde **"Enviar pedido por WhatsApp"** que abre WhatsApp con un mensaje ya armado: nombre del cliente, cada producto con cantidad y precio, subtotal, saldo aplicado, total, forma de pago y el código del ticket — todo lo manda directo al número del restaurante.
 
 El número está configurado en `main.js` (y en `demo-standalone.html`) como `RESTAURANT_WHATSAPP = "522222998533"` (52 = México + tus 10 dígitos). Si cambia el número del restaurante, solo edita esa línea.
 
