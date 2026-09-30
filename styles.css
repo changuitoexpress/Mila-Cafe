@@ -477,6 +477,10 @@ body{
 .order-card-grid span{ display:block; margin-bottom:4px; color:var(--espresso-soft); font-size:11px; }
 .order-card-grid strong{ display:block; font-size:13px; line-height:1.4; overflow-wrap:anywhere; }
 .redeem-order-btn{ margin-top:17px; }
+.order-readonly-note{
+  margin-top:16px; padding:10px 12px; border-radius:var(--radius-sm);
+  background:var(--cream); color:var(--espresso-soft); font-size:12px;
+}
 .dashboard-empty{ padding:30px; border:1px dashed var(--copper); border-radius:var(--radius-sm); color:var(--espresso-soft); text-align:center; }
 
 @media (max-width:760px){

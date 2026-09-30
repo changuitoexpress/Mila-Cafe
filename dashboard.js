@@ -155,6 +155,7 @@ function renderOrders() {
           <div><span>Entrega</span><strong>${deliveryLabel(order)}</strong></div>
           <div><span>Dirección</span><strong>${addressLabel(order)}</strong></div>
         </div>
+        ${order.delivery_type !== "delivery" ? '<p class="order-readonly-note">Para llevar · Solo consulta en el panel. La validación por QR en caja aún no está habilitada.</p>' : ""}
         ${canRedeem ? `<button class="btn btn-primary redeem-order-btn" type="button" data-order-id="${order.id}">Entregado y pagado</button>` : ""}
       </article>
     `;
