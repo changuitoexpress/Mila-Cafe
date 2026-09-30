@@ -18,7 +18,6 @@ if (
   console.error("Configuración de Supabase vacía o con caracteres inválidos.");
 }
 
-alert('Supabase cargado: ' + (typeof window.supabase !== 'undefined'));
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Generador de imagen QR: servicio gratuito, no requiere instalar nada.
@@ -91,7 +90,6 @@ $$('input[name="delivery_type"]').forEach((input) =>
 async function handleLogin() {
   let errorEl;
   try {
-    console.log("Iniciando sesión con teléfono...");
     const phone = $("#phone-input").value.trim();
     const name = $("#name-input").value.trim();
     errorEl = $("#login-error");
@@ -111,7 +109,6 @@ async function handleLogin() {
 
     if (findErr) {
       console.error("Error de Supabase DB:", findErr);
-      alert("Error de Supabase: " + JSON.stringify(findErr));
       throw findErr;
     }
 
@@ -126,7 +123,6 @@ async function handleLogin() {
         .single();
       if (insertErr) {
         console.error("Error de Supabase DB:", insertErr);
-        alert("Error de Supabase: " + JSON.stringify(insertErr));
         throw insertErr;
       }
       currentUser = created;
@@ -136,7 +132,6 @@ async function handleLogin() {
     startApp();
   } catch (err) {
     console.error("Error en el inicio de sesión:", err);
-    alert('ERROR: ' + JSON.stringify(err && err.message ? err.message : err));
     if (errorEl) {
       errorEl.textContent = "No pudimos conectar. Revisa tu conexión o las llaves de Supabase.";
     }
