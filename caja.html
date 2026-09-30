@@ -1,147 +1,116 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Mila Café — Menú digital</title>
-<link rel="icon" type="image/svg+xml" href="icons/mila-icon.svg" />
-
-<!-- Tipografías: Fraunces (display, con carácter) + Work Sans (texto) + JetBrains Mono (tickets/QR) -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500&family=Work+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-
-<!-- Supabase JS -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-<link rel="stylesheet" href="styles.css" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#f6f0e6" />
+  <title>Mila Café — Panel de caja</title>
+  <link rel="icon" type="image/svg+xml" href="icons/mila-icon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Work+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    .caja-wrap { max-width: 460px; margin: 40px auto; padding: 0 20px; }
+    .caja-card { background: #fff; border-radius: var(--radius); box-shadow: var(--shadow); padding: 28px 24px; text-align: center; }
+    .caja-result { margin-top: 18px; border-radius: var(--radius-sm); padding: 16px; font-size: 14px; text-align: left; white-space: pre-line; }
+    .caja-result.ok { background: #EAF1E4; color: var(--sage); }
+    .caja-result.err { background: #F6E3E1; color: var(--danger); }
+    .caja-result.pending { background: #f6f0e6; color: #5d5149; }
+    .caja-help { color: #6b625c; font-size: 14px; line-height: 1.5; }
+  </style>
 </head>
 <body>
+  <main class="caja-wrap">
+    <section class="caja-card" aria-labelledby="caja-title">
+      <p class="eyebrow">Mila Café</p>
+      <h1 id="caja-title" class="logo" style="font-size:24px;">Panel de caja</h1>
+      <p class="caja-help">Escanea el QR con el lector (que escribe el código y termina con Enter) o pega el código del ticket.</p>
 
-  <!-- ============ PANTALLA: LOGIN ============ -->
-  <section id="view-login" class="view view-login active">
-    <div class="stain stain-1"></div>
-    <div class="stain stain-2"></div>
-    <div class="login-card">
-      <p class="eyebrow">Bienvenido a</p>
-      <h1 class="logo">Mila<span>Café</span></h1>
-      <p class="login-sub">Tu menú, tu monedero y tu cashback en un solo lugar.</p>
+      <label class="field-label" for="token-input">Código del ticket</label>
+      <input id="token-input" class="input" type="text" placeholder="Escanea aquí o pega el código" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="caja-help" />
+      <span id="caja-help" class="caja-help">El lector debe estar conectado y el cursor en este campo.</span>
 
-      <label class="field-label" for="phone-input">Tu número de teléfono</label>
-      <input id="phone-input" class="input" type="tel" placeholder="10 dígitos" maxlength="10" inputmode="numeric" />
-
-      <label class="field-label" for="name-input">Tu nombre (solo la primera vez)</label>
-      <input id="name-input" class="input" type="text" placeholder="¿Cómo te llamamos?" />
-
-      <button id="btn-login" class="btn btn-primary btn-block">Entrar</button>
-      <p id="login-error" class="error-text"></p>
-    </div>
-  </section>
-
-  <!-- ============ APP (visible tras login) ============ -->
-  <div id="app" class="app hidden">
-
-    <header class="topbar">
-      <div class="topbar-brand">Mila<span>Café</span></div>
-      <nav class="tabs">
-        <button class="tab active" data-tab="menu">Menú</button>
-        <button class="tab" data-tab="cuenta">Mi cuenta</button>
-      </nav>
-      <button id="btn-cart" class="cart-btn">
-        🛍️ <span id="cart-count" class="cart-count hidden">0</span>
-      </button>
-    </header>
-
-    <!-- ============ VISTA: MENÚ ============ -->
-    <section id="view-menu" class="view active">
-      <div class="menu-intro">
-        <p class="eyebrow">Hola, <span id="user-name-tag">—</span></p>
-        <h2>¿Qué se te antoja hoy?</h2>
-      </div>
-      <div id="products-grid" class="products-grid">
-        <p class="loading-text">Cargando menú…</p>
-      </div>
+      <button id="btn-validate" class="btn btn-primary btn-block" type="button" style="margin-top:16px;">Validar ticket</button>
+      <div id="result" class="caja-result hidden" role="status" aria-live="polite"></div>
     </section>
+  </main>
 
-    <!-- ============ VISTA: MI CUENTA ============ -->
-    <section id="view-cuenta" class="view">
-      <div class="wallet-card">
-        <p class="eyebrow">Saldo disponible</p>
-        <p class="wallet-amount">$<span id="wallet-balance">0.00</span></p>
-        <p class="wallet-hint">Tu saldo se queda en la app y solo sirve para pagar futuras compras en Mila Café. No se entrega en efectivo.</p>
-      </div>
-      <button id="btn-logout" class="btn btn-secondary btn-block account-logout" type="button">Cerrar sesión</button>
-      <h3 class="section-title">Historial</h3>
-      <div id="transactions-list" class="tx-list">
-        <p class="loading-text">Cargando historial…</p>
-      </div>
-    </section>
+  <script>
+    (() => {
+      const SUPABASE_URL = "https://jspmxmaeaswnumxyetcu.supabase.co";
+      const SUPABASE_ANON_KEY = "sb_publishable_M_cDBeTCWqnii7cvT0y6bQ_C4lsVijO";
+      const supabaseCashierClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      const input = document.getElementById("token-input");
+      const button = document.getElementById("btn-validate");
+      const resultEl = document.getElementById("result");
+      let isValidating = false;
 
-  </div>
+      function showResult(message, state) {
+        resultEl.classList.remove("hidden", "ok", "err", "pending");
+        resultEl.classList.add(state);
+        resultEl.textContent = message;
+      }
 
-  <!-- ============ MODAL: DETALLE DE PRODUCTO ============ -->
-  <div id="modal-product" class="modal-overlay hidden">
-    <div class="modal-card">
-      <button class="modal-close" data-close>✕</button>
-      <div id="modal-product-body"></div>
-    </div>
-  </div>
+      function formatSuccess(data) {
+        const lines = [`✔ ${data.message || "Pedido validado correctamente."}`];
+        if (data.cliente) lines.push(`Cliente: ${data.cliente}`);
+        if (data.total != null) lines.push(`Total: $${Number(data.total).toFixed(2)}`);
+        if (data.cashback_abonado != null) {
+          lines.push(`Cashback abonado: $${Number(data.cashback_abonado).toFixed(2)}`);
+        }
+        return lines.join("\n");
+      }
 
-  <!-- ============ MODAL: CARRITO ============ -->
-  <div id="modal-cart" class="modal-overlay hidden">
-    <div class="modal-card">
-      <button class="modal-close" data-close>✕</button>
-      <h2 class="modal-title">Tu carrito</h2>
-      <div id="cart-items" class="cart-items"></div>
+      async function validateTicket() {
+        if (isValidating) return;
+        const token = input.value.trim();
+        if (!token) {
+          showResult("Escanea o escribe el código del ticket.", "err");
+          input.focus();
+          return;
+        }
 
-      <div id="wallet-toggle-row" class="wallet-toggle-row hidden">
-        <label class="checkbox-row">
-          <input type="checkbox" id="use-wallet-checkbox" />
-          <span>Usar mi saldo de monedero (<span id="wallet-available-amount">$0.00</span> disponible)</span>
-        </label>
-      </div>
+        isValidating = true;
+        button.disabled = true;
+        button.textContent = "Validando…";
+        showResult("Consultando el ticket…", "pending");
 
-      <h4 class="payment-title">Forma de pago</h4>
-      <div id="payment-options" class="payment-options">
-        <label class="payment-option"><input type="radio" name="payment" value="Efectivo" checked><span>Efectivo</span></label>
-        <label class="payment-option"><input type="radio" name="payment" value="Transferencia"><span>Transferencia</span></label>
-        <label class="payment-option"><input type="radio" name="payment" value="Pago en línea"><span>Pago en línea</span></label>
-        <label class="payment-option"><input type="radio" name="payment" value="Terminal (tarjeta)"><span>Terminal (tarjeta)</span></label>
-      </div>
+        try {
+          const { data, error } = await supabaseCashierClient.rpc("redeem_order", {
+            p_qr_token: token,
+          });
+          const response = Array.isArray(data) ? data[0] : data;
 
-      <div class="cart-summary">
-        <div class="cart-summary-row"><span>Subtotal</span><span id="cart-subtotal">$0.00</span></div>
-        <div class="cart-summary-row" id="cart-wallet-row" style="display:none;"><span>Saldo aplicado</span><span id="cart-wallet-used">-$0.00</span></div>
-        <div class="cart-summary-row cart-total"><span>Total a pagar en caja</span><span id="cart-total">$0.00</span></div>
-      </div>
+          if (error) {
+            console.error("No se pudo validar el ticket:", error);
+            showResult(`No se pudo validar el ticket: ${error.message || "error de conexión con Supabase"}.`, "err");
+          } else if (!response || response.success !== true) {
+            showResult(response?.message || "Supabase no confirmó la validación del ticket.", "err");
+          } else {
+            showResult(formatSuccess(response), "ok");
+          }
+        } catch (error) {
+          console.error("Error al validar el ticket:", error);
+          showResult(`No se pudo validar el ticket: ${error.message || "error inesperado"}.`, "err");
+        } finally {
+          input.value = "";
+          isValidating = false;
+          button.disabled = false;
+          button.textContent = "Validar ticket";
+          input.focus();
+        }
+      }
 
-      <button id="btn-checkout" class="btn btn-primary btn-block">Generar ticket</button>
-    </div>
-  </div>
-
-  <!-- ============ MODAL: TICKET CON QR ============ -->
-  <div id="modal-ticket" class="modal-overlay hidden">
-    <div class="modal-card ticket-card">
-      <button class="modal-close" data-close>✕</button>
-      <div class="ticket-stamp"></div>
-      <p class="eyebrow">Tu ticket digital</p>
-      <h2 class="modal-title">Muéstralo en caja</h2>
-      <div id="ticket-qr" class="ticket-qr"></div>
-      <p class="ticket-token" id="ticket-token">—</p>
-      <div class="ticket-detail" id="ticket-detail"></div>
-      <a id="btn-whatsapp" class="btn btn-whatsapp btn-block" href="#" target="_blank" rel="noopener">Enviar pedido por WhatsApp</a>
-      <button class="btn btn-secondary btn-block" data-close style="margin-top:10px;">Listo</button>
-    </div>
-  </div>
-
-  <!-- Toast de notificaciones -->
-  <div id="toast" class="toast hidden"></div>
-
-  <button id="floating-cart" class="floating-cart hidden" type="button" aria-label="Abrir carrito">
-    <span class="floating-cart-icon" aria-hidden="true">🛒</span>
-    <span>Carrito</span>
-    <span id="floating-cart-count" class="floating-cart-count">0</span>
-  </button>
-
-  <script src="main.js"></script>
+      input.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          validateTicket();
+        }
+      });
+      button.addEventListener("click", validateTicket);
+      input.focus();
+    })();
+  </script>
 </body>
 </html>
