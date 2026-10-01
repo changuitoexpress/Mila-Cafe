@@ -20,12 +20,6 @@ if (
 
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// Generador de imagen QR: servicio gratuito, no requiere instalar nada.
-// Solo le mandamos el texto (el token) y nos regresa una imagen PNG.
-function qrImageUrl(text, size = 260) {
-  return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(text)}`;
-}
-
 // Número de WhatsApp del restaurante (52 = México + los 10 dígitos)
 const RESTAURANT_WHATSAPP = "522222998533";
 const SESSION_STORAGE_KEY = "milaCafeSession";
@@ -662,10 +656,10 @@ function updateCartSummary() {
 }
 
 // ============================================================
-// CHECKOUT — crea la orden + sus items y genera el ticket QR
+// CHECKOUT — crea la orden + sus items y genera la confirmación del pedido
 // El cashback se calcula solo (trigger en Supabase).
 // El saldo NO se descuenta aquí: se descuenta hasta que el
-// personal valide el QR en caja (función redeem_order).
+// administrador confirme el pedido en el dashboard (función redeem_order).
 // ============================================================
 $("#btn-checkout").addEventListener("click", handleCheckout);
 
@@ -734,13 +728,13 @@ async function handleCheckout() {
 
     finalOrder.items = cartSnapshot;
     finalOrder.subtotal = subtotal;
-    showTicket(finalOrder);
+    showOrderConfirmation(finalOrder);
     cart = [];
     updateCartBadge();
     closeModal("#modal-cart");
   } catch (err) {
     console.error(err);
-    showToast("No se pudo generar el ticket. Intenta de nuevo.");
+    showToast("No se pudo registrar el pedido. Intenta de nuevo.");
   }
 }
 
@@ -764,13 +758,13 @@ function buildWhatsappMessage(order) {
     lines.push("Entrega: Pasar a recoger");
   }
   lines.push(`Cashback que ganará: $${money(order.cashback_earned)}`);
-  lines.push(`Código de ticket: ${order.qr_token}`);
   return lines.join("\n");
 }
 
-function showTicket(order) {
-  $("#ticket-qr").innerHTML = `<img src="${qrImageUrl(order.qr_token)}" alt="Código QR del ticket" />`;
-  $("#ticket-token").textContent = order.qr_token;
+function showOrderConfirmation(order) {
+  $("#ticket-message").textContent = order.delivery_type === "delivery"
+    ? "Tu pedido fue recibido, un repartidor te lo llevará pronto."
+    : "Tu pedido fue recibido, pásalo a recoger en unos minutos.";
   $("#ticket-detail").innerHTML = `
     <div class="row"><span>Total a pagar</span><span>$${money(order.total)}</span></div>
     <div class="row"><span>Saldo aplicado</span><span>-$${money(order.wallet_used)}</span></div>

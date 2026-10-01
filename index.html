@@ -11,7 +11,7 @@
 <link rel="icon" type="image/svg+xml" href="icons/mila-icon.svg" />
 <link rel="apple-touch-icon" href="icons/mila-icon-192.png" />
 
-<!-- Tipografías: Fraunces (display, con carácter) + Work Sans (texto) + JetBrains Mono (tickets/QR) -->
+<!-- Tipografías: Fraunces (display, con carácter) + Work Sans (texto) + JetBrains Mono (detalles) -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500&family=Work+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 
@@ -169,22 +169,21 @@
       <div class="cart-summary">
         <div class="cart-summary-row"><span>Subtotal</span><span id="cart-subtotal">$0.00</span></div>
         <div class="cart-summary-row" id="cart-wallet-row" style="display:none;"><span>Saldo aplicado</span><span id="cart-wallet-used">-$0.00</span></div>
-        <div class="cart-summary-row cart-total"><span>Total a pagar en caja</span><span id="cart-total">$0.00</span></div>
+        <div class="cart-summary-row cart-total"><span>Total a pagar</span><span id="cart-total">$0.00</span></div>
       </div>
 
-      <button id="btn-checkout" class="btn btn-primary btn-block">Generar ticket</button>
+      <button id="btn-checkout" class="btn btn-primary btn-block">Confirmar pedido</button>
     </div>
   </div>
 
-  <!-- ============ MODAL: TICKET CON QR ============ -->
+  <!-- ============ MODAL: PEDIDO RECIBIDO ============ -->
   <div id="modal-ticket" class="modal-overlay hidden">
     <div class="modal-card ticket-card">
       <button class="modal-close" data-close>✕</button>
       <div class="ticket-stamp"></div>
-      <p class="eyebrow">Tu ticket digital</p>
-      <h2 class="modal-title">Muéstralo en caja</h2>
-      <div id="ticket-qr" class="ticket-qr"></div>
-      <p class="ticket-token" id="ticket-token">—</p>
+      <p class="eyebrow">Pedido recibido</p>
+      <h2 class="modal-title">¡Gracias por tu pedido!</h2>
+      <p id="ticket-message"></p>
       <div class="ticket-detail" id="ticket-detail"></div>
       <a id="btn-whatsapp" class="btn btn-whatsapp btn-block" href="#" target="_blank" rel="noopener">Enviar pedido por WhatsApp</a>
       <button class="btn btn-secondary btn-block" data-close style="margin-top:10px;">Listo</button>

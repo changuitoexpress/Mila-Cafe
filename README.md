@@ -1,9 +1,8 @@
-# Mila Café — Menú digital + monedero con QR
+# Mila Café — Menú digital + monedero
 
 ## Qué incluye
-- `index.html` / `styles.css` / `main.js` → la app que usan tus clientes (menú, carrito, monedero, ticket QR)
-- `dashboard.html` → consulta los pedidos; los de pickup son de solo lectura
-- `caja.html` → página heredada de menú, **todavía no contiene un lector ni validador de QR**
+- `index.html` / `styles.css` / `main.js` → la app que usan tus clientes (menú, carrito, monedero, confirmación de pedido)
+- `dashboard.html` → consulta los pedidos y confirma pickup y delivery con «Entregado y pagado»
 - El SQL original de Supabase no está incluido en este repositorio; no ejecutar instrucciones antiguas que lo mencionan como si existiera
 
 ## Paso 1 — Crear el proyecto en Supabase
@@ -15,24 +14,24 @@
 ## Paso 2 — Conectar la app a Supabase
 1. Abre `main.js` y busca la sección `🔧 CONFIGURACIÓN` (arriba del todo).
 2. Reemplaza `SUPABASE_URL` y `SUPABASE_ANON_KEY` con los datos que copiaste.
-3. El archivo `caja.html` carga `main.js`, así que usa la misma configuración.
+3. `dashboard.js` usa su propia conexión al mismo proyecto de Supabase.
 
 ## Paso 3 — Subir a Replit
 1. Crea un Repl tipo **HTML/CSS/JS** (o "Static Site").
 2. Sube los archivos de la aplicación, incluido `dashboard.html`, `dashboard.js`, el manifest, el service worker y los iconos.
-3. Dale **Run**. Tu app vive en `tu-repl.replit.app` y la de caja en `tu-repl.replit.app/caja.html`.
+3. Dale **Run**. Tu app vive en `tu-repl.replit.app` y el panel en `tu-repl.replit.app/dashboard.html`.
 
 ## Cómo funciona el flujo de dinero (para que lo tengas claro)
-1. El cliente entra con su teléfono, arma su carrito y da "Generar ticket".
-2. Se crea un pedido con estado `pending` y un código QR único — **todavía no se toca su saldo**.
-3. El cliente recibe el QR. **La validación pickup aún no está implementada en `caja.html`**; antes de habilitarla hay que comprobar en Supabase que solo personal autorizado pueda ejecutar `redeem_order`.
+1. El cliente entra con su teléfono, arma su carrito y da "Confirmar pedido".
+2. Se crea un pedido con estado `pending` y un token interno (no se muestra al cliente) — **todavía no se toca su saldo**.
+3. El cliente ve una confirmación de pedido recibido. El administrador confirma pickup y delivery desde `dashboard.html`, que llama a `redeem_order` con el token interno.
 4. Cuando `redeem_order` se ejecuta con permisos adecuados, el sistema:
    - Descuenta el saldo que el cliente pidió usar (si aplica).
    - Abona el cashback que ganó con esa compra.
-   - Marca el ticket como `completed` para que no se pueda volver a usar.
+   - Marca el pedido como `completed` para que no se pueda volver a usar.
 
 ## Forma de pago y envío del pedido por WhatsApp
-En el carrito, el cliente elige cómo va a pagar (Efectivo, Transferencia, Pago en línea o Terminal). «Pago en línea» registra el método elegido, pero **todavía no cobra mediante una pasarela**. Al generar el ticket, aparece un botón verde **"Enviar pedido por WhatsApp"** que abre WhatsApp con un mensaje ya armado: nombre del cliente, cada producto con cantidad y precio, subtotal, saldo aplicado, total, forma de pago y el código del ticket — todo lo manda directo al número del restaurante.
+En el carrito, el cliente elige cómo va a pagar (Efectivo, Transferencia, Pago en línea o Terminal). «Pago en línea» registra el método elegido, pero **todavía no cobra mediante una pasarela**. Al confirmar el pedido, aparece un botón verde **"Enviar pedido por WhatsApp"** que abre WhatsApp con un mensaje ya armado: nombre del cliente, cada producto con cantidad y precio, subtotal, saldo aplicado, total, forma de pago — todo lo manda directo al número del restaurante.
 
 El número está configurado en `main.js` (y en `demo-standalone.html`) como `RESTAURANT_WHATSAPP = "522222998533"` (52 = México + tus 10 dígitos). Si cambia el número del restaurante, solo edita esa línea.
 

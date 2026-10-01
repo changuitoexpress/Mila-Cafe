@@ -232,7 +232,7 @@ function renderOrders() {
   list.innerHTML = orders.map((order) => {
     const status = normalizeStatus(order.status);
     const profile = profileMap.get(order.user_id);
-    const canRedeem = order.delivery_type === "delivery" && status === "pending" && order.qr_token;
+    const canRedeem = status === "pending" && order.qr_token;
     return `
       <article class="order-card">
         <div class="order-card-heading">
@@ -250,14 +250,13 @@ function renderOrders() {
           <div><span>Entrega</span><strong>${deliveryLabel(order)}</strong></div>
           <div><span>Dirección</span><strong>${addressLabel(order)}</strong></div>
         </div>
-        ${order.delivery_type !== "delivery" ? '<p class="order-readonly-note">Para llevar · Solo consulta en el panel. La validación por QR en caja aún no está habilitada.</p>' : ""}
         ${canRedeem ? `<button class="btn btn-primary redeem-order-btn" type="button" data-order-id="${order.id}">Entregado y pagado</button>` : ""}
       </article>
     `;
   }).join("");
 
   list.querySelectorAll(".redeem-order-btn").forEach((button) => {
-    button.addEventListener("click", () => redeemDeliveryOrder(button.dataset.orderId, button));
+    button.addEventListener("click", () => redeemOrder(button.dataset.orderId, button));
   });
 }
 
@@ -270,10 +269,10 @@ function rpcHasFailure(result) {
   );
 }
 
-async function redeemDeliveryOrder(orderId, button) {
+async function redeemOrder(orderId, button) {
   const order = allOrders.find((candidate) => String(candidate.id) === String(orderId));
   if (!order?.qr_token) {
-    $("#dashboard-feedback").textContent = "Este pedido no tiene token QR para validar.";
+    $("#dashboard-feedback").textContent = "Este pedido no tiene token interno para confirmar.";
     return;
   }
 
