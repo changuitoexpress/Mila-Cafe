@@ -458,6 +458,7 @@ async function loadProducts() {
     const fallback = await supabaseClient
       .from("products")
       .select("*")
+      .eq("active", true)
       .order("category");
     data = fallback.data;
     error = fallback.error;
