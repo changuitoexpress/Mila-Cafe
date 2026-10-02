@@ -456,11 +456,61 @@ async function initDashboard() {
 
 let dashboardStarted = false;
 
+function initChangePin() {
+  const modal = $("#pin-modal");
+  const message = $("#cp-message");
+  const close = () => modal.classList.add("hidden");
+  $("#change-pin-open").addEventListener("click", () => {
+    $("#change-pin-form").reset();
+    message.textContent = "";
+    message.classList.add("error-text");
+    modal.classList.remove("hidden");
+    $("#cp-current").focus();
+  });
+  $("#pin-modal-close").addEventListener("click", close);
+  modal.addEventListener("click", (event) => { if (event.target === modal) close(); });
+  $("#change-pin-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const current = $("#cp-current").value.trim();
+    const next = $("#cp-new").value.trim();
+    message.classList.add("error-text");
+    if (next !== $("#cp-confirm").value.trim()) {
+      message.textContent = "El PIN nuevo y su confirmación no coinciden.";
+      return;
+    }
+    const save = $("#cp-save");
+    save.disabled = true;
+    message.textContent = "";
+    try {
+      // Llamada directa: un error aquí no debe sacar al administrador del panel.
+      const { data, error } = await supabaseDashboardClient.rpc("admin_change_pin", {
+        p_admin_id: adminId,
+        p_pin: current,
+        p_new_pin: next,
+      });
+      if (error) throw new Error(error.message);
+      if (data && data.ok === false) {
+        message.textContent = data.error || "No se pudo cambiar el PIN.";
+        return;
+      }
+      adminPin = next;
+      $("#change-pin-form").reset();
+      message.classList.remove("error-text");
+      message.textContent = "PIN actualizado.";
+    } catch (error) {
+      message.textContent = error.message;
+    } finally {
+      save.disabled = false;
+    }
+  });
+}
+
 async function startDashboard() {
   document.querySelectorAll(".admin-tab").forEach((tab) => {
     tab.addEventListener("click", () => showTab(tab.dataset.tab));
   });
   if (typeof initCatalogAdmin === "function") initCatalogAdmin();
+  initChangePin();
   $("#refresh-dashboard").addEventListener("click", loadDashboard);
   $("#status-filter").addEventListener("change", renderOrders);
   $("#delivery-filter").addEventListener("change", renderOrders);

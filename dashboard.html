@@ -15,6 +15,7 @@
     <a class="dashboard-brand" href="index.html">Mila<span>Café</span></a>
     <div class="dashboard-topbar-actions">
       <span id="admin-name" class="admin-name"></span>
+      <button id="change-pin-open" class="dashboard-logout" type="button">Cambiar mi PIN</button>
       <button id="dashboard-logout" class="dashboard-logout" type="button">Cerrar sesión</button>
     </div>
   </header>
@@ -187,6 +188,20 @@
       </div>
     </div>
   </main>
+
+  <div id="pin-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="pin-modal-title">
+    <div class="modal-card">
+      <button class="modal-close" type="button" id="pin-modal-close" aria-label="Cerrar">✕</button>
+      <h2 id="pin-modal-title" class="modal-title">Cambiar mi PIN</h2>
+      <form id="change-pin-form" class="admin-form" autocomplete="off">
+        <label class="span-2">PIN actual<input id="cp-current" class="input" type="password" inputmode="numeric" autocomplete="off" required /></label>
+        <label class="span-2">PIN nuevo<input id="cp-new" class="input" type="password" inputmode="numeric" autocomplete="off" required /></label>
+        <label class="span-2">Confirmar PIN nuevo<input id="cp-confirm" class="input" type="password" inputmode="numeric" autocomplete="off" required /></label>
+        <p id="cp-message" class="error-text span-2" role="alert"></p>
+        <button id="cp-save" class="btn btn-primary span-2" type="submit">Guardar PIN nuevo</button>
+      </form>
+    </div>
+  </div>
 
   <script src="dashboard.js"></script>
   <script src="dashboard-catalog.js"></script>
