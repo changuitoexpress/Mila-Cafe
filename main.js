@@ -451,6 +451,7 @@ async function loadProducts() {
     .from("products")
     .select("*")
     .eq("active", true)
+    .eq("activo", true)
     .order("category");
 
   if (error || !data || data.length === 0) {
@@ -459,6 +460,7 @@ async function loadProducts() {
       .from("products")
       .select("*")
       .eq("active", true)
+      .eq("activo", true)
       .order("category");
     data = fallback.data;
     error = fallback.error;

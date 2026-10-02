@@ -8,6 +8,8 @@ let profileMap = new Map();
 let productMap = new Map();
 let orderItemsMap = new Map();
 let dashboardLoading = false;
+let adminId = null;
+let adminPin = null; // solo en memoria: nunca se guarda en el navegador
 let alertsInitialized = false;
 let seenOrderIds = new Set();
 let realtimeChannel = null;
@@ -27,8 +29,48 @@ function getSession() {
   }
 }
 
+// Llama a una función admin_* de Supabase. Siempre envía el id y el PIN del
+// administrador. Si el PIN falla, se borra y se vuelve a pedir.
+async function adminRpc(name, params = {}) {
+  const { data, error } = await supabaseDashboardClient.rpc(name, {
+    p_admin_id: adminId,
+    p_pin: adminPin,
+    ...params,
+  });
+  if (error) throw new Error(error.message);
+  if (data && data.ok === false) {
+    if (/PIN|intentos|autorizado/i.test(data.error || "")) requirePin(data.error);
+    throw new Error(data.error || "Supabase rechazó la operación");
+  }
+  return data ? data.data : null;
+}
+
+function requirePin(message) {
+  adminPin = null;
+  $("#dashboard-content").classList.add("hidden");
+  $("#dashboard-access").classList.remove("hidden");
+  $("#pin-form").classList.remove("hidden");
+  $("#dashboard-access-message").textContent = "Escribe tu PIN de administrador para continuar.";
+  $("#pin-error").textContent = message || "";
+  $("#admin-pin").value = "";
+  $("#admin-pin").focus();
+}
+
 function setAccessMessage(message) {
   $("#dashboard-access-message").textContent = message;
+}
+
+function showTab(name) {
+  document.querySelectorAll(".admin-tab").forEach((tab) => {
+    const active = tab.dataset.tab === name;
+    tab.classList.toggle("is-active", active);
+    tab.setAttribute("aria-selected", String(active));
+  });
+  document.querySelectorAll(".admin-tab-panel").forEach((panel) => {
+    panel.classList.toggle("hidden", panel.id !== `tab-${name}`);
+  });
+  if (name === "productos" && typeof loadAdminProducts === "function") loadAdminProducts();
+  if (name === "tienda" && typeof loadStoreSettings === "function") loadStoreSettings();
 }
 
 function updateAlertsStatus() {
@@ -204,6 +246,9 @@ function renderSummary() {
   $("#stat-orders").textContent = todayOrders.length;
   $("#stat-pending").textContent = pending.length;
   $("#stat-completed").textContent = completed.length;
+  const badge = $("#pending-badge");
+  badge.textContent = pending.length;
+  badge.classList.toggle("hidden", pending.length === 0);
 }
 
 function renderOrderProducts(order) {
@@ -232,7 +277,7 @@ function renderOrders() {
   list.innerHTML = orders.map((order) => {
     const status = normalizeStatus(order.status);
     const profile = profileMap.get(order.user_id);
-    const canRedeem = status === "pending" && order.qr_token;
+    const actions = orderActions(order, status);
     return `
       <article class="order-card">
         <div class="order-card-heading">
@@ -240,7 +285,7 @@ function renderOrders() {
             <span class="order-id">Pedido #${String(order.id).slice(0, 8)}</span>
             <time>${formatDate(order.created_at)}</time>
           </div>
-          <span class="status-badge status-${status}">${status}</span>
+          <span class="status-badge status-${status}">${statusLabel(order, status)}</span>
         </div>
         <div class="order-card-grid">
           <div><span>Cliente</span><strong>${profile?.name || "Cliente"}${profile?.phone ? ` · ${profile.phone}` : ""}</strong></div>
@@ -250,48 +295,76 @@ function renderOrders() {
           <div><span>Entrega</span><strong>${deliveryLabel(order)}</strong></div>
           <div><span>Dirección</span><strong>${addressLabel(order)}</strong></div>
         </div>
-        ${canRedeem ? `<button class="btn btn-primary redeem-order-btn" type="button" data-order-id="${order.id}">Entregado y pagado</button>` : ""}
+        ${actions}
       </article>
     `;
   }).join("");
 
-  list.querySelectorAll(".redeem-order-btn").forEach((button) => {
-    button.addEventListener("click", () => redeemOrder(button.dataset.orderId, button));
+  list.querySelectorAll("[data-order-action]").forEach((button) => {
+    button.addEventListener("click", () => runOrderAction(button));
   });
 }
 
-function rpcHasFailure(result) {
-  const payload = Array.isArray(result) ? result[0] : result;
-  return Boolean(
-    payload &&
-    typeof payload === "object" &&
-    (payload.success === false || payload.ok === false || payload.error)
-  );
+const STAGE_LABELS = {
+  preparando: "En preparación",
+  recogiendo: "Recogiendo",
+  en_ruta: "En ruta",
+  entregado: "Entregado",
+  listo: "Listo para recoger",
+};
+const DELIVERY_FLOW = ["preparando", "recogiendo", "en_ruta", "entregado"];
+const PICKUP_FLOW = ["preparando", "listo"];
+
+function statusLabel(order, status) {
+  if (status === "completed") return "Entregado y pagado";
+  if (status === "cancelled") return "Cancelado";
+  return STAGE_LABELS[order.etapa] || "Nuevo";
 }
 
-async function redeemOrder(orderId, button) {
-  const order = allOrders.find((candidate) => String(candidate.id) === String(orderId));
-  if (!order?.qr_token) {
-    $("#dashboard-feedback").textContent = "Este pedido no tiene token interno para confirmar.";
-    return;
+function orderActions(order, status) {
+  if (status !== "pending") return "";
+  const isDelivery = order.delivery_type === "delivery";
+  const flow = isDelivery ? DELIVERY_FLOW : PICKUP_FLOW;
+  const index = flow.indexOf(order.etapa);
+  const nextStage = flow[index + 1];
+  const lastStage = flow[flow.length - 1];
+  let primary;
+  if (nextStage) {
+    primary = `<button class="btn btn-primary" type="button" data-order-action="stage" data-stage="${nextStage}" data-order-id="${order.id}">Marcar: ${STAGE_LABELS[nextStage]}</button>`;
+  } else if (order.etapa === lastStage) {
+    primary = `<button class="btn btn-primary" type="button" data-order-action="redeem" data-order-id="${order.id}">${isDelivery ? "Pagado" : "Entregado y pagado"}</button>`;
   }
+  const cancel = `<button class="btn btn-secondary btn-danger-text" type="button" data-order-action="cancel" data-order-id="${order.id}">Cancelar pedido</button>`;
+  return `<div class="order-actions">${primary || ""}${cancel}</div>`;
+}
 
+async function runOrderAction(button) {
+  const orderId = button.dataset.orderId;
+  const action = button.dataset.orderAction;
+  const feedback = $("#dashboard-feedback");
+  if (action === "cancel" && !window.confirm("¿Cancelar este pedido? Los pedidos cancelados no dan cashback.")) return;
+
+  const original = button.textContent;
   button.disabled = true;
-  button.textContent = "Validando…";
-  const { data, error } = await supabaseDashboardClient.rpc("redeem_order", {
-    p_qr_token: order.qr_token,
-  });
-
-  if (error || rpcHasFailure(data)) {
-    console.error("redeem_order falló:", error || data);
-    $("#dashboard-feedback").textContent = `No se pudo validar el pedido: ${error?.message || "respuesta rechazada por Supabase"}.`;
+  button.textContent = "Guardando…";
+  try {
+    if (action === "stage") {
+      await adminRpc("admin_set_order_stage", { p_order_id: orderId, p_etapa: button.dataset.stage });
+      feedback.textContent = "Estado del pedido actualizado.";
+    } else if (action === "redeem") {
+      await adminRpc("admin_redeem_order", { p_order_id: orderId });
+      feedback.textContent = "Pedido pagado: saldo y cashback actualizados.";
+    } else if (action === "cancel") {
+      await adminRpc("admin_cancel_order", { p_order_id: orderId });
+      feedback.textContent = "Pedido cancelado.";
+    }
+    await loadDashboard();
+  } catch (error) {
+    console.error("Acción de pedido falló:", error);
+    feedback.textContent = `No se pudo actualizar el pedido: ${error.message}.`;
     button.disabled = false;
-    button.textContent = "Entregado y pagado";
-    return;
+    button.textContent = original;
   }
-
-  $("#dashboard-feedback").textContent = "Pedido completado: saldo y transacción actualizados por redeem_order.";
-  await loadDashboard();
 }
 
 async function loadDashboard() {
@@ -344,9 +417,50 @@ async function initDashboard() {
     return;
   }
 
+  adminId = profile.id;
   $("#admin-name").textContent = profile.name || "Administrador";
-  $("#dashboard-access").classList.add("hidden");
-  $("#dashboard-content").classList.remove("hidden");
+  $("#pin-form").classList.remove("hidden");
+  $("#dashboard-access-message").textContent = "Escribe tu PIN de administrador para continuar.";
+  $("#admin-pin").focus();
+  $("#pin-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const pin = $("#admin-pin").value.trim();
+    const submit = $("#pin-form button[type=submit]");
+    submit.disabled = true;
+    $("#pin-error").textContent = "";
+    try {
+      const { data, error } = await supabaseDashboardClient.rpc("admin_login", { p_admin_id: adminId, p_pin: pin });
+      if (error) throw new Error(error.message);
+      if (!data || data.ok !== true) {
+        $("#pin-error").textContent = data?.error || "No se pudo validar el PIN.";
+        return;
+      }
+      adminPin = pin;
+      $("#admin-pin").value = "";
+      $("#pin-form").classList.add("hidden");
+      $("#dashboard-access").classList.add("hidden");
+      $("#dashboard-content").classList.remove("hidden");
+      if (!dashboardStarted) {
+        dashboardStarted = true;
+        await startDashboard();
+      } else {
+        await loadDashboard();
+      }
+    } catch (error) {
+      $("#pin-error").textContent = `No se pudo validar el PIN: ${error.message}.`;
+    } finally {
+      submit.disabled = false;
+    }
+  });
+}
+
+let dashboardStarted = false;
+
+async function startDashboard() {
+  document.querySelectorAll(".admin-tab").forEach((tab) => {
+    tab.addEventListener("click", () => showTab(tab.dataset.tab));
+  });
+  if (typeof initCatalogAdmin === "function") initCatalogAdmin();
   $("#refresh-dashboard").addEventListener("click", loadDashboard);
   $("#status-filter").addEventListener("change", renderOrders);
   $("#delivery-filter").addEventListener("change", renderOrders);
@@ -383,5 +497,3 @@ async function initDashboard() {
   connectOrderAlerts();
   window.setInterval(loadDashboard, 12000);
 }
-
-initDashboard();

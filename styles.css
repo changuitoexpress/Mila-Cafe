@@ -657,3 +657,64 @@ body{
   #app .category-chips{ padding-left:16px; padding-right:16px; gap:22px; }
   #app .view{ padding-left:16px; padding-right:16px; }
 }
+
+/* ===== Panel admin: pestañas, productos y tienda ===== */
+.pin-form{ display:flex; flex-direction:column; gap:10px; max-width:320px; margin:0 auto 18px; text-align:left; }
+.pin-form label{ font-size:13px; font-weight:600; }
+.admin-tabs{ display:flex; gap:6px; margin-top:18px; overflow-x:auto; border-bottom:1px solid var(--cream-2); }
+.admin-tab{
+  flex:0 0 auto; padding:13px 16px; border:none; background:none; cursor:pointer;
+  font:600 14px 'Work Sans', sans-serif; color:var(--espresso-soft);
+  border-bottom:3px solid transparent; min-height:44px;
+}
+.admin-tab.is-active{ color:var(--espresso); border-bottom-color:var(--copper); }
+.tab-badge{
+  display:inline-block; min-width:20px; padding:1px 6px; margin-left:4px; border-radius:99px;
+  background:var(--danger); color:#fff; font-size:11px; text-align:center;
+}
+.admin-tab-panel{ margin-top:22px; }
+.product-filters{ margin-bottom:8px; flex-wrap:wrap; }
+.product-filters .input{ flex:1 1 220px; }
+.admin-products{ display:flex; flex-direction:column; gap:10px; }
+.admin-product{
+  display:flex; align-items:center; gap:14px; padding:12px; background:#fff;
+  border-radius:var(--radius-sm); border:1px solid var(--cream-2);
+}
+.admin-product.is-hidden{ opacity:.6; background:var(--cream-2); }
+.admin-product-thumb{ width:64px; height:64px; border-radius:10px; object-fit:cover; flex:0 0 auto; background:var(--cream-2); }
+.admin-product-thumb-empty{ display:flex; align-items:center; justify-content:center; font-size:26px; }
+.admin-product-info{ flex:1; min-width:0; }
+.admin-product-info strong{ display:block; font-size:15px; }
+.admin-product-info span{ display:block; margin-top:3px; color:var(--espresso-soft); font-size:12px; }
+.admin-product .star{ color:var(--copper); }
+.admin-product-actions{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:flex-end; }
+.admin-product-actions .btn{ padding:10px 14px; font-size:13px; }
+.switch{ display:inline-flex; align-items:center; gap:8px; cursor:pointer; font-size:12px; font-weight:600; min-height:44px; }
+.switch input{ position:absolute; opacity:0; width:1px; height:1px; }
+.switch-track{ width:42px; height:24px; border-radius:99px; background:#b9ada0; position:relative; transition:background .15s; }
+.switch-track::after{ content:""; position:absolute; top:3px; left:3px; width:18px; height:18px; border-radius:50%; background:#fff; transition:transform .15s; }
+.switch input:checked + .switch-track{ background:var(--sage); }
+.switch input:checked + .switch-track::after{ transform:translateX(18px); }
+.switch input:focus-visible + .switch-track{ outline:2px solid var(--copper); outline-offset:2px; }
+.admin-form{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:14px; }
+.admin-form label{ display:flex; flex-direction:column; gap:5px; font-size:12px; font-weight:600; color:var(--espresso-soft); }
+.admin-form .span-2{ grid-column:1 / -1; }
+.admin-form .check-row{ flex-direction:row; align-items:center; gap:8px; min-height:44px; color:var(--espresso); font-size:13px; }
+.photo-field{ display:flex; flex-direction:column; gap:8px; font-size:12px; font-weight:600; color:var(--espresso-soft); }
+.photo-preview{ width:140px; height:140px; object-fit:cover; border-radius:12px; border:1px solid var(--cream-2); }
+.photo-field small{ font-weight:400; }
+.product-modal-card{ max-height:92vh; overflow-y:auto; }
+.store-toggle{
+  width:100%; padding:22px; border:none; border-radius:var(--radius); cursor:pointer;
+  font:700 20px 'Work Sans', sans-serif; color:#fff; background:var(--danger);
+}
+.store-toggle.is-open{ background:var(--sage); }
+.store-toggle:disabled{ opacity:.6; }
+.order-actions{ display:flex; flex-wrap:wrap; gap:10px; margin-top:16px; }
+.order-actions .btn{ min-height:46px; }
+.btn-danger-text{ color:var(--danger); }
+@media (max-width:620px){
+  .admin-form{ grid-template-columns:1fr; }
+  .admin-product{ flex-wrap:wrap; }
+  .admin-product-actions{ width:100%; justify-content:space-between; }
+}

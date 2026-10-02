@@ -24,7 +24,13 @@
       <p class="eyebrow">Panel privado</p>
       <h1>Acceso de administración</h1>
       <p id="dashboard-access-message">Comprobando permisos…</p>
-      <a class="btn btn-primary" href="index.html">Volver al menú</a>
+      <form id="pin-form" class="pin-form hidden" autocomplete="off">
+        <label for="admin-pin">PIN de administrador</label>
+        <input id="admin-pin" class="input" type="password" inputmode="numeric" autocomplete="off" required />
+        <button class="btn btn-primary" type="submit">Entrar</button>
+        <p id="pin-error" class="error-text" role="alert"></p>
+      </form>
+      <a class="btn btn-secondary" href="index.html">Volver al menú</a>
     </section>
 
     <div id="dashboard-content" class="hidden">
@@ -38,6 +44,15 @@
           <button id="refresh-dashboard" class="btn btn-secondary" type="button">Actualizar</button>
         </div>
       </div>
+      <nav class="admin-tabs" role="tablist" aria-label="Secciones del panel">
+        <button class="admin-tab is-active" type="button" role="tab" data-tab="pedidos">Pedidos <span id="pending-badge" class="tab-badge hidden">0</span></button>
+        <button class="admin-tab" type="button" role="tab" data-tab="productos">Productos</button>
+        <button class="admin-tab" type="button" role="tab" data-tab="promociones">Promociones</button>
+        <button class="admin-tab" type="button" role="tab" data-tab="metricas">Métricas</button>
+        <button class="admin-tab" type="button" role="tab" data-tab="tienda">Tienda</button>
+      </nav>
+
+      <div id="tab-pedidos" class="admin-tab-panel">
       <div class="dashboard-alert-settings">
         <p id="alerts-status" role="status" aria-live="polite">Conectando avisos de pedidos…</p>
         <div>
@@ -96,9 +111,85 @@
         <p id="dashboard-feedback" class="dashboard-feedback"></p>
         <div id="orders-list" class="orders-list"></div>
       </section>
+      </div>
+
+      <section id="tab-productos" class="admin-tab-panel hidden">
+        <div class="orders-toolbar">
+          <div>
+            <p class="eyebrow">Catálogo</p>
+            <h2>Productos</h2>
+          </div>
+          <button id="product-add" class="btn btn-primary" type="button">+ Agregar producto</button>
+        </div>
+        <div class="filter-row product-filters">
+          <input id="product-search" class="input" type="search" placeholder="Buscar producto…" aria-label="Buscar producto" />
+          <select id="product-category-filter" class="dashboard-select" aria-label="Filtrar por categoría"></select>
+        </div>
+        <p id="product-feedback" class="dashboard-feedback" role="status"></p>
+        <div id="admin-products" class="admin-products"></div>
+      </section>
+
+      <section id="tab-promociones" class="admin-tab-panel hidden">
+        <div class="dashboard-empty">Las promociones llegan en la siguiente fase.</div>
+      </section>
+
+      <section id="tab-metricas" class="admin-tab-panel hidden">
+        <div class="dashboard-empty">Las métricas llegan en una fase posterior.</div>
+      </section>
+
+      <section id="tab-tienda" class="admin-tab-panel hidden">
+        <div class="orders-toolbar">
+          <div>
+            <p class="eyebrow">Configuración</p>
+            <h2>Tienda</h2>
+          </div>
+        </div>
+        <button id="store-toggle" class="store-toggle" type="button" aria-pressed="true">Cargando…</button>
+        <form id="store-form" class="admin-form">
+          <label>Costo de envío ($)<input id="store-costo-envio" class="input" type="number" min="0" step="0.01" inputmode="decimal" /></label>
+          <label>Tiempo estimado (minutos)<input id="store-tiempo" class="input" type="number" min="0" step="1" inputmode="numeric" /></label>
+          <label>Pedido mínimo ($)<input id="store-minimo" class="input" type="number" min="0" step="0.01" inputmode="decimal" /></label>
+          <label>WhatsApp (con lada, ej. 522222998533)<input id="store-whatsapp" class="input" type="text" inputmode="numeric" /></label>
+          <label class="span-2">Horario<input id="store-horario" class="input" type="text" placeholder="Lun a Sáb 8:00–20:00" /></label>
+          <label class="span-2">Dirección<input id="store-direccion" class="input" type="text" /></label>
+          <label class="span-2">Aviso para los clientes<textarea id="store-aviso" class="input" rows="2" placeholder="Se muestra arriba del menú"></textarea></label>
+          <button class="btn btn-primary span-2" type="submit">Guardar tienda</button>
+        </form>
+        <p id="store-feedback" class="dashboard-feedback" role="status"></p>
+      </section>
+    </div>
+
+    <div id="product-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="product-modal-title">
+      <div class="modal-card product-modal-card">
+        <button class="modal-close" type="button" id="product-modal-close" aria-label="Cerrar">✕</button>
+        <h2 id="product-modal-title" class="modal-title">Producto</h2>
+        <form id="product-form" class="admin-form">
+          <label class="span-2">Nombre<input id="pf-name" class="input" type="text" required /></label>
+          <label>Categoría
+            <select id="pf-category" class="input"></select>
+          </label>
+          <label id="pf-new-category-wrap" class="hidden">Nueva categoría<input id="pf-new-category" class="input" type="text" /></label>
+          <label>Precio ($)<input id="pf-price" class="input" type="number" min="0" step="0.01" inputmode="decimal" required /></label>
+          <label>Cashback (%)<input id="pf-cashback" class="input" type="number" min="0" max="100" step="0.5" inputmode="decimal" value="5" /></label>
+          <label>Orden<input id="pf-orden" class="input" type="number" step="1" inputmode="numeric" value="0" /></label>
+          <label class="span-2">Descripción (la ven todos los clientes)<textarea id="pf-description" class="input" rows="3"></textarea></label>
+          <div class="span-2 photo-field">
+            <span>Foto</span>
+            <img id="pf-preview" class="photo-preview hidden" alt="Vista previa de la foto" />
+            <input id="pf-photo" type="file" accept="image/jpeg,image/png,image/webp" />
+            <small id="pf-photo-status"></small>
+          </div>
+          <label class="check-row"><input id="pf-destacado" type="checkbox" /> Destacado</label>
+          <label class="check-row"><input id="pf-activo" type="checkbox" checked /> Activo (visible para clientes)</label>
+          <p id="pf-error" class="error-text span-2" role="alert"></p>
+          <button id="pf-save" class="btn btn-primary span-2" type="submit">Guardar producto</button>
+        </form>
+      </div>
     </div>
   </main>
 
   <script src="dashboard.js"></script>
+  <script src="dashboard-catalog.js"></script>
+  <script>initDashboard();</script>
 </body>
 </html>
