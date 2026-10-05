@@ -1,1 +1,3 @@
-- [Supabase CDN global](supabase-cdn-global.md) — avoid naming the local client `supabase` in classic scripts because the CDN owns that global.- [Admin writes via PIN RPCs](admin-writes-via-rpc.md) — admin writes use admin_* RPCs with PIN; user runs all SQL; dual active/activo; etapa vs status.
+- [Supabase CDN global](supabase-cdn-global.md) — avoid naming the local client `supabase` in classic scripts because the CDN owns that global.
+- [Admin writes via PIN RPCs](admin-writes-via-rpc.md) — admin writes use admin_* RPCs with PIN; user runs all SQL; dual active/activo; etapa vs status.
+- [Cashback del negocio](cashback-policy.md) — el cashback es 5% para todos los productos, no depende de la categoría.

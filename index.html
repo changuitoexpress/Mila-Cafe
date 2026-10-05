@@ -109,6 +109,20 @@
       </div>
       <button id="btn-logout" class="btn btn-secondary btn-block account-logout" type="button">Cerrar sesión</button>
       <a id="admin-dashboard-account" class="btn btn-primary btn-block account-admin-link hidden" href="dashboard.html">Panel de administración</a>
+      <section class="saved-address-section" aria-labelledby="saved-address-title">
+        <h3 id="saved-address-title" class="section-title">Mi dirección</h3>
+        <p>Se usará para autocompletar tus pedidos a domicilio. Puedes cambiarla también en el carrito.</p>
+        <form id="saved-address-form">
+          <label class="field-label" for="address-fraccionamiento">Fraccionamiento</label>
+          <input id="address-fraccionamiento" class="input" type="text" autocomplete="address-level2" required />
+          <label class="field-label" for="address-calle">Calle</label>
+          <input id="address-calle" class="input" type="text" autocomplete="street-address" required />
+          <label class="field-label" for="address-numero">Número</label>
+          <input id="address-numero" class="input" type="text" autocomplete="address-line1" required />
+          <button class="btn btn-secondary btn-block" type="submit">Guardar dirección</button>
+          <p id="address-feedback" role="status" aria-live="polite"></p>
+        </form>
+      </section>
       <h3 class="section-title">Historial</h3>
       <div id="transactions-list" class="tx-list">
         <p class="loading-text">Cargando historial…</p>
@@ -147,6 +161,7 @@
         <label class="payment-option"><input type="radio" name="payment" value="Terminal (tarjeta)"><span>Terminal (tarjeta)</span></label>
       </div>
 
+      <p id="payment-error" class="error-text" role="alert"></p>
       <div class="delivery-section">
         <h4 class="payment-title">Entrega</h4>
         <div class="delivery-options">
@@ -160,14 +175,13 @@
           <input id="delivery-calle" class="input" type="text" autocomplete="street-address" />
           <label class="field-label" for="delivery-numero">Número</label>
           <input id="delivery-numero" class="input" type="text" autocomplete="address-line1" />
-          <label class="field-label" for="delivery-referencias">Referencias</label>
-          <textarea id="delivery-referencias" class="input" rows="2"></textarea>
           <p id="delivery-error" class="error-text"></p>
         </div>
       </div>
 
       <div class="cart-summary">
         <div class="cart-summary-row"><span>Subtotal</span><span id="cart-subtotal">$0.00</span></div>
+        <div class="cart-summary-row"><span>Ganarás de cashback (5%)</span><span id="cart-cashback">$0.00</span></div>
         <div class="cart-summary-row" id="cart-wallet-row" style="display:none;"><span>Saldo aplicado</span><span id="cart-wallet-used">-$0.00</span></div>
         <div class="cart-summary-row cart-total"><span>Total a pagar</span><span id="cart-total">$0.00</span></div>
       </div>

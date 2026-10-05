@@ -23,6 +23,14 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
 // Número de WhatsApp del restaurante (52 = México + los 10 dígitos)
 const RESTAURANT_WHATSAPP = "522222998533";
 const SESSION_STORAGE_KEY = "milaCafeSession";
+const ADDRESS_STORAGE_KEY = "milaCafeAddress";
+const CASHBACK_PERCENT = 5;
+const ADDRESS_FIELDS = ["fraccionamiento", "calle", "numero"];
+let addressLookup = null;
+let addressLookupUserId = null;
+let cartAddressInitialized = false;
+let cartAddressEdited = false;
+let profileAddressEdited = false;
 
 // ============================================================
 // ESTADO EN MEMORIA
@@ -80,6 +88,14 @@ $("#header-favorites")?.addEventListener("click", () => scrollToSection("favorit
 $$('input[name="delivery_type"]').forEach((input) =>
   input.addEventListener("change", toggleDeliveryFields)
 );
+$$('input[name="payment"]').forEach((input) =>
+  input.addEventListener("change", () => { $("#payment-error").textContent = ""; })
+);
+ADDRESS_FIELDS.forEach((field) => {
+  $(`#delivery-${field}`).addEventListener("input", () => { cartAddressEdited = true; });
+  $(`#address-${field}`).addEventListener("input", () => { profileAddressEdited = true; });
+});
+$("#saved-address-form").addEventListener("submit", saveProfileAddress);
 
 async function handleLogin() {
   let errorEl;
@@ -184,6 +200,18 @@ function restoreSession() {
 
 function handleLogout() {
   localStorage.removeItem(SESSION_STORAGE_KEY);
+  localStorage.removeItem(ADDRESS_STORAGE_KEY);
+  addressLookup = null;
+  addressLookupUserId = null;
+  cartAddressInitialized = false;
+  cartAddressEdited = false;
+  profileAddressEdited = false;
+  ADDRESS_FIELDS.forEach((field) => {
+    $(`#delivery-${field}`).value = "";
+    $(`#address-${field}`).value = "";
+  });
+  $("#address-feedback").textContent = "";
+  $("#payment-error").textContent = "";
   currentUser = null;
   products = [];
   cart = [];
@@ -225,9 +253,124 @@ function scrollToSection(sectionId) {
 function toggleDeliveryFields() {
   const selected = document.querySelector('input[name="delivery_type"]:checked')?.value;
   $("#delivery-fields")?.classList.toggle("hidden", selected !== "delivery");
+  const terminal = document.querySelector('input[name="payment"][value="Terminal (tarjeta)"]');
+  const isDelivery = selected === "delivery";
+  terminal.closest("label").classList.toggle("hidden", isDelivery);
+  terminal.disabled = isDelivery;
+  if (isDelivery && terminal.checked) {
+    terminal.checked = false;
+    $("#payment-error").textContent = "Terminal no está disponible a domicilio. Elige otra forma de pago.";
+  }
+  if (isDelivery) autofillDeliveryAddress();
   if (selected !== "delivery") {
     $("#delivery-error") && ($("#delivery-error").textContent = "");
   }
+}
+
+function normalizeAddress(value) {
+  if (!value || typeof value !== "object") return null;
+  const address = Object.fromEntries(ADDRESS_FIELDS.map((field) => [field, String(value[field] || "").trim()]));
+  return ADDRESS_FIELDS.every((field) => address[field]) ? address : null;
+}
+
+function readLocalAddress(userId) {
+  try {
+    const saved = JSON.parse(localStorage.getItem(ADDRESS_STORAGE_KEY) || "null");
+    return saved?.user_id === userId ? normalizeAddress(saved) : null;
+  } catch {
+    return null;
+  }
+}
+
+async function getSavedAddress() {
+  const userId = currentUser?.id;
+  if (!userId) return null;
+  const local = readLocalAddress(userId);
+  if (local) return local;
+  if (!addressLookup || addressLookupUserId !== userId) {
+    addressLookupUserId = userId;
+    addressLookup = (async () => {
+      const { data, error } = await supabaseClient.from("orders")
+        .select("fraccionamiento, calle, numero")
+        .eq("user_id", userId)
+        .eq("delivery_type", "delivery")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return normalizeAddress(data);
+    })();
+  }
+  try {
+    const address = await addressLookup;
+    if (currentUser?.id !== userId) return null;
+    // Si guardó una dirección mientras se consultaba, esa tiene prioridad.
+    return readLocalAddress(userId) || address;
+  } catch (error) {
+    if (addressLookupUserId === userId) addressLookup = null;
+    throw error;
+  }
+}
+
+function writeSavedAddress(address) {
+  try {
+    localStorage.setItem(ADDRESS_STORAGE_KEY, JSON.stringify({ user_id: currentUser.id, ...address }));
+    addressLookupUserId = currentUser.id;
+    addressLookup = Promise.resolve(address);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function autofillDeliveryAddress() {
+  if (cartAddressInitialized || cartAddressEdited) return;
+  const userId = currentUser?.id;
+  try {
+    const address = await getSavedAddress();
+    if (currentUser?.id !== userId || cartAddressEdited) return;
+    if (address) ADDRESS_FIELDS.forEach((field) => { $(`#delivery-${field}`).value = address[field]; });
+    cartAddressInitialized = true;
+  } catch {
+    if (currentUser?.id === userId) {
+      $("#delivery-error").textContent = "No se pudo recuperar tu dirección. Puedes escribirla aquí.";
+    }
+  }
+}
+
+async function loadProfileAddress() {
+  const userId = currentUser?.id;
+  if (profileAddressEdited) return;
+  $("#address-feedback").textContent = "Cargando dirección…";
+  try {
+    const address = await getSavedAddress();
+    if (currentUser?.id !== userId || profileAddressEdited) return;
+    ADDRESS_FIELDS.forEach((field) => { $(`#address-${field}`).value = address?.[field] || ""; });
+    $("#address-feedback").textContent = address ? "" : "Aún no tienes una dirección guardada.";
+  } catch {
+    if (currentUser?.id === userId) $("#address-feedback").textContent = "No se pudo recuperar tu dirección. Puedes escribirla y guardarla.";
+  }
+}
+
+function saveProfileAddress(event) {
+  event.preventDefault();
+  if (!currentUser?.id) return;
+  const address = normalizeAddress(Object.fromEntries(ADDRESS_FIELDS.map((field) => [field, $(`#address-${field}`).value])));
+  if (!address) {
+    $("#address-feedback").textContent = "Completa fraccionamiento, calle y número.";
+    return;
+  }
+  if (!writeSavedAddress(address)) {
+    $("#address-feedback").textContent = "Este navegador no permitió guardar la dirección.";
+    return;
+  }
+  profileAddressEdited = false;
+  // No sustituir una dirección temporal que el cliente ya editó en el carrito.
+  if (!cartAddressEdited) {
+    ADDRESS_FIELDS.forEach((field) => { $(`#delivery-${field}`).value = address[field]; });
+    cartAddressInitialized = true;
+  }
+  $("#address-feedback").textContent = "Dirección guardada en este dispositivo.";
 }
 
 function slugify(value, index) {
@@ -252,6 +395,7 @@ $$(".tab").forEach((tab) =>
     if (tab.dataset.tab === "cuenta") {
       refreshWalletUI();
       loadTransactions();
+      loadProfileAddress();
     }
   })
 );
@@ -369,7 +513,7 @@ function renderProductCard(product) {
     <p class="desc">${product.description || ""}</p>
     <div class="price-row">
       <span class="price">$${money(product.price)}</span>
-      <span class="cashback-badge">Gana $${money((product.price * product.cashback_percent) / 100)} aquí</span>
+      <span class="cashback-badge">Gana $${money((product.price * CASHBACK_PERCENT) / 100)} aquí (5%)</span>
     </div>
   `;
   card.addEventListener("click", () => openProductModal(product));
@@ -537,7 +681,7 @@ function renderProductModal() {
   $("#modal-product-body").innerHTML = `
     <p class="eyebrow">${p.category || "Café"}</p>
     <h2 class="product-modal-title">${p.name}</h2>
-    <p class="product-modal-price">$${money(p.price)} · <span class="cashback-badge">Gana $${money((p.price * p.cashback_percent) / 100)}</span></p>
+    <p class="product-modal-price">$${money(p.price)} · <span class="cashback-badge">Gana $${money((p.price * CASHBACK_PERCENT) / 100)} (5%)</span></p>
 
     <div class="product-modal-section">
       <h4>Descripción</h4>
@@ -653,6 +797,7 @@ function updateCartSummary() {
   const total = subtotal - walletUsed;
 
   $("#cart-subtotal").textContent = `$${money(subtotal)}`;
+  $("#cart-cashback").textContent = `$${money(subtotal * CASHBACK_PERCENT / 100)}`;
   $("#cart-total").textContent = `$${money(total)}`;
   $("#cart-wallet-row").style.display = walletUsed > 0 ? "flex" : "none";
   $("#cart-wallet-used").textContent = `-$${money(walletUsed)}`;
@@ -671,13 +816,19 @@ async function handleCheckout() {
   const useWallet = $("#use-wallet-checkbox").checked;
   const walletAvailable = Number(currentUser.wallet_balance || 0);
   const walletUsed = useWallet ? Math.min(subtotal, walletAvailable) : 0;
-  const paymentMethod = document.querySelector('input[name="payment"]:checked').value;
+  const paymentMethod = document.querySelector('input[name="payment"]:checked')?.value;
   const deliveryType = document.querySelector('input[name="delivery_type"]:checked')?.value || "pickup";
+  if (!paymentMethod || (deliveryType === "delivery" && paymentMethod === "Terminal (tarjeta)")) {
+    $("#payment-error").textContent = deliveryType === "delivery"
+      ? "Elige Efectivo, Transferencia o Pago en línea para tu pedido a domicilio."
+      : "Elige una forma de pago.";
+    return;
+  }
+  $("#payment-error").textContent = "";
   const delivery = {
     fraccionamiento: $("#delivery-fraccionamiento")?.value.trim() || "",
     calle: $("#delivery-calle")?.value.trim() || "",
     numero: $("#delivery-numero")?.value.trim() || "",
-    referencias: $("#delivery-referencias")?.value.trim() || "",
   };
 
   // Guardamos una copia de los items del carrito ANTES de vaciarlo,
@@ -703,7 +854,6 @@ async function handleCheckout() {
         fraccionamiento: deliveryType === "delivery" ? delivery.fraccionamiento : null,
         calle: deliveryType === "delivery" ? delivery.calle : null,
         numero: deliveryType === "delivery" ? delivery.numero : null,
-        referencias: deliveryType === "delivery" ? delivery.referencias : null,
       })
       .select()
       .single();
@@ -716,10 +866,19 @@ async function handleCheckout() {
       product_id: c.product.id,
       quantity: c.qty,
       unit_price: c.product.price,
-      cashback_percent: c.product.cashback_percent,
+      cashback_percent: CASHBACK_PERCENT,
     }));
     const { error: itemsErr } = await supabaseClient.from("order_items").insert(itemsPayload);
     if (itemsErr) throw itemsErr;
+    if (deliveryType === "delivery") {
+      const saved = writeSavedAddress(delivery);
+      if (!saved) showToast("Pedido registrado, pero no se pudo guardar la dirección en este dispositivo.");
+      cartAddressEdited = false;
+      cartAddressInitialized = true;
+      profileAddressEdited = false;
+      ADDRESS_FIELDS.forEach((field) => { $(`#address-${field}`).value = delivery[field]; });
+      $("#address-feedback").textContent = saved ? "Dirección actualizada." : "No se pudo guardar la dirección en este dispositivo.";
+    }
 
     // 3. Releer la orden ya con total/cashback calculados por el trigger
     const { data: finalOrder, error: reErr } = await supabaseClient
@@ -756,7 +915,6 @@ function buildWhatsappMessage(order) {
   lines.push(`Forma de pago: ${order.payment_method}`);
   if (order.delivery_type === "delivery") {
     lines.push(`Entrega a domicilio: ${order.fraccionamiento}, calle ${order.calle}, número ${order.numero}`);
-    lines.push(`Referencias: ${order.referencias}`);
   } else {
     lines.push("Entrega: Pasar a recoger");
   }

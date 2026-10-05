@@ -32,6 +32,10 @@ body{
 }
 
 .hidden{display:none !important;}
+.saved-address-section{ margin:24px 0; }
+.saved-address-section > p{ font-size:13px; line-height:1.5; color:var(--espresso-soft); }
+.saved-address-section .btn{ margin-top:16px; }
+#address-feedback{ margin-top:10px; font-size:13px; }
 
 .eyebrow{
   font-family:'JetBrains Mono', monospace;

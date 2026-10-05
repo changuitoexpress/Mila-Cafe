@@ -93,7 +93,7 @@ function renderAdminProducts() {
         ${thumb}
         <div class="admin-product-info">
           <strong>${escapeHtml(p.name)}${p.destacado ? ' <span class="star" title="Destacado">★</span>' : ""}</strong>
-          <span>${escapeHtml(p.category || "Sin categoría")} · $${money(p.price)} · cashback ${Number(p.cashback_percent || 0)}% · orden ${p.orden ?? 0}</span>
+          <span>${escapeHtml(p.category || "Sin categoría")} · $${money(p.price)} · cashback 5% · orden ${p.orden ?? 0}</span>
         </div>
         <div class="admin-product-actions">
           <label class="switch" title="${active ? "Activo" : "Oculto"}">
@@ -156,7 +156,7 @@ function openProductForm(product) {
   fillFormCategories(product?.category);
   $("#pf-new-category").value = "";
   $("#pf-price").value = product ? product.price : "";
-  $("#pf-cashback").value = product ? Number(product.cashback_percent ?? 5) : 5;
+  $("#pf-cashback").value = 5;
   $("#pf-orden").value = product?.orden ?? 0;
   $("#pf-description").value = product?.description || "";
   $("#pf-destacado").checked = product?.destacado === true;
@@ -255,7 +255,7 @@ async function saveProductForm(event) {
       p_name: $("#pf-name").value.trim(),
       p_category: category,
       p_price: Number($("#pf-price").value),
-      p_cashback_percent: $("#pf-cashback").value === "" ? 5 : Number($("#pf-cashback").value),
+      p_cashback_percent: 5,
       p_description: $("#pf-description").value.trim(),
       p_image_url: imageUrl,
       p_destacado: $("#pf-destacado").checked,

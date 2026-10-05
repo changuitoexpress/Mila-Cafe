@@ -187,7 +187,9 @@ function deliveryLabel(order) {
 
 function addressLabel(order) {
   if (order.delivery_type !== "delivery") return "Pickup en Mila Café";
-  return [order.fraccionamiento, `Calle ${order.calle}`, `No. ${order.numero}`, order.referencias]
+  // Compatibilidad: solo los pedidos antiguos pueden traer referencias.
+  return [order.fraccionamiento, order.calle && `Calle ${order.calle}`, order.numero && `No. ${order.numero}`,
+    order.referencias?.trim() && `Referencias: ${order.referencias.trim()}`]
     .filter(Boolean)
     .join(", ");
 }
@@ -518,6 +520,7 @@ async function startDashboard() {
     if (reconnectTimer) window.clearTimeout(reconnectTimer);
     if (realtimeChannel) supabaseDashboardClient.removeChannel(realtimeChannel);
     localStorage.removeItem(SESSION_STORAGE_KEY);
+    localStorage.removeItem("milaCafeAddress");
     window.location.href = "index.html";
   });
   $("#enable-order-sound").addEventListener("click", async () => {
