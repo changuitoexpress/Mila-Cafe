@@ -1,10 +1,11 @@
 // Solo archivos locales de la interfaz. Nunca interceptar datos de Supabase ni CDN externos.
-const STATIC_CACHE = "mila-static-v1";
+const STATIC_CACHE = "mila-static-v2";
 const STATIC_FILES = [
   "./",
   "./index.html",
   "./styles.css",
   "./main.js",
+  "./product-media.js",
   "./pwa.js",
   "./manifest.webmanifest",
   "./icons/mila-icon.svg",

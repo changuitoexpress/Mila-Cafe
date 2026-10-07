@@ -591,9 +591,10 @@ function renderProductCard(product) {
   const card = document.createElement("div");
   card.className = "product-card";
   const isFavorite = favoriteProductIds.has(product.id);
+  const firstPhoto = window.MilaMedia.urls(product)[0];
   card.innerHTML = `
     <div class="product-image-wrap">
-      ${product.image_url ? `<img class="product-image" src="${product.image_url}" alt="${product.name}" loading="lazy" onerror="this.style.display='none'">` : '<div class="product-image-placeholder"></div>'}
+      ${firstPhoto ? `<img class="product-image" src="${window.MilaMedia.escape(firstPhoto)}" alt="${window.MilaMedia.escape(product.name)}" loading="lazy" onerror="this.style.display='none'">` : '<div class="product-image-placeholder"></div>'}
       <button class="favorite-btn ${isFavorite ? "is-favorite" : ""}" type="button" aria-label="${isFavorite ? "Quitar de favoritos" : "Agregar a favoritos"}">${isFavorite ? "♥" : "♡"}</button>
       <button class="quick-add-btn" type="button" aria-label="Agregar ${product.name} al carrito">+</button>
     </div>
@@ -698,6 +699,12 @@ async function loadProducts() {
     return;
   }
 
+  try {
+    const images = await window.MilaMedia.load(supabaseClient, products.map((product) => product.id));
+    products.forEach((product) => { product.images = images.get(product.id) || []; });
+  } catch (error) {
+    showToast(`No se pudieron cargar las fotos adicionales: ${error.message}`);
+  }
   renderMenu();
 }
 
@@ -711,6 +718,7 @@ function openProductModal(product) {
 function renderProductModal() {
   const p = activeProduct;
   $("#modal-product-body").innerHTML = `
+    ${window.MilaMedia.carousel(p)}
     <p class="eyebrow">${p.category || "Café"}</p>
     <h2 class="product-modal-title">${p.name}</h2>
     <p class="product-modal-price">$${money(p.price)} · <span class="cashback-badge">Gana $${money((p.price * CASHBACK_PERCENT) / 100)} (5%)</span></p>
@@ -732,6 +740,7 @@ function renderProductModal() {
 
     <button class="btn btn-primary btn-block" id="btn-add-cart">Agregar al carrito</button>
   `;
+  window.MilaMedia.bindCarousel($("#modal-product-body"));
 
   $("#qty-minus").addEventListener("click", () => {
     activeQty = Math.max(1, activeQty - 1);

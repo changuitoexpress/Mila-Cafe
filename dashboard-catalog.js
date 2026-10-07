@@ -4,13 +4,10 @@
 // Todas las escrituras pasan por funciones admin_* (adminRpc);
 // las fotos se suben al bucket público "product-images".
 // ============================================================
-const PRODUCT_BUCKET = "product-images";
 const NEW_CATEGORY_VALUE = "__nueva__";
-const PHOTO_MAX_SIDE = 1000;
 
 let adminProducts = [];
 let editingProduct = null;
-let pendingPhotoBlob = null;
 let storeSettings = null;
 let catalogReady = false;
 
@@ -28,7 +25,7 @@ function initCatalogAdmin() {
     if (event.target.id === "product-modal") closeProductForm();
   });
   $("#pf-category").addEventListener("change", syncNewCategoryField);
-  $("#pf-photo").addEventListener("change", handlePhotoSelected);
+  window.AdminMedia.init();
   $("#product-form").addEventListener("submit", saveProductForm);
   $("#store-form").addEventListener("submit", saveStoreForm);
   $("#store-toggle").addEventListener("click", toggleStoreOpen);
@@ -148,8 +145,8 @@ function syncNewCategoryField() {
 }
 
 function openProductForm(product) {
+  if (window.AdminMedia.isBusy()) return;
   editingProduct = product;
-  pendingPhotoBlob = null;
   $("#product-modal-title").textContent = product ? "Editar producto" : "Agregar producto";
   $("#pf-error").textContent = "";
   $("#pf-name").value = product?.name || "";
@@ -163,78 +160,19 @@ function openProductForm(product) {
   $("#pf-activo").checked = product ? isProductActive(product) : true;
   $("#pf-photo").value = "";
   $("#pf-photo-status").textContent = "";
-  const preview = $("#pf-preview");
-  if (product?.image_url) {
-    preview.src = product.image_url;
-    preview.classList.remove("hidden");
-  } else {
-    preview.removeAttribute("src");
-    preview.classList.add("hidden");
-  }
+  window.AdminMedia.open(product);
   $("#product-modal").classList.remove("hidden");
   $("#pf-name").focus();
 }
 
 function closeProductForm() {
+  if (window.AdminMedia.isBusy()) return;
   $("#product-modal").classList.add("hidden");
-}
-
-function resizeImage(file) {
-  return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      const scale = Math.min(1, PHOTO_MAX_SIDE / Math.max(img.width, img.height));
-      const canvas = document.createElement("canvas");
-      canvas.width = Math.round(img.width * scale);
-      canvas.height = Math.round(img.height * scale);
-      const ctx = canvas.getContext("2d");
-      ctx.fillStyle = "#fff";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("No se pudo reducir la imagen"))), "image/jpeg", 0.82);
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error("El archivo no es una imagen válida"));
-    };
-    img.src = url;
-  });
-}
-
-async function handlePhotoSelected() {
-  const file = $("#pf-photo").files[0];
-  const status = $("#pf-photo-status");
-  if (!file) return;
-  status.textContent = "Reduciendo imagen…";
-  try {
-    pendingPhotoBlob = await resizeImage(file);
-    const preview = $("#pf-preview");
-    preview.src = URL.createObjectURL(pendingPhotoBlob);
-    preview.classList.remove("hidden");
-    status.textContent = `Lista para subir (${Math.round(pendingPhotoBlob.size / 1024)} KB).`;
-  } catch (error) {
-    pendingPhotoBlob = null;
-    status.textContent = error.message;
-  }
-}
-
-async function uploadPendingPhoto() {
-  const path = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
-  const { error } = await supabaseDashboardClient.storage
-    .from(PRODUCT_BUCKET)
-    .upload(path, pendingPhotoBlob, { contentType: "image/jpeg", upsert: false });
-  if (error) {
-    console.error("Error al subir la foto:", error);
-    const code = error.statusCode || error.status;
-    throw new Error(`No se pudo subir la foto. Error exacto de Supabase: ${error.message}${code ? ` (código ${code})` : ""}`);
-  }
-  return supabaseDashboardClient.storage.from(PRODUCT_BUCKET).getPublicUrl(path).data.publicUrl;
 }
 
 async function saveProductForm(event) {
   event.preventDefault();
+  if (window.AdminMedia.isBusy()) return;
   const errorBox = $("#pf-error");
   const saveButton = $("#pf-save");
   errorBox.textContent = "";
@@ -249,7 +187,6 @@ async function saveProductForm(event) {
   saveButton.disabled = true;
   saveButton.textContent = "Guardando…";
   try {
-    const imageUrl = pendingPhotoBlob ? await uploadPendingPhoto() : null;
     await adminRpc("admin_save_product", {
       p_id: editingProduct?.id || null,
       p_name: $("#pf-name").value.trim(),
@@ -257,7 +194,7 @@ async function saveProductForm(event) {
       p_price: Number($("#pf-price").value),
       p_cashback_percent: 5,
       p_description: $("#pf-description").value.trim(),
-      p_image_url: imageUrl,
+      p_image_url: null,
       p_destacado: $("#pf-destacado").checked,
       p_orden: Math.trunc(Number($("#pf-orden").value) || 0),
       p_activo: $("#pf-activo").checked,

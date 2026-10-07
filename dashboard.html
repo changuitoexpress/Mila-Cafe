@@ -175,10 +175,11 @@
           <label>Orden<input id="pf-orden" class="input" type="number" step="1" inputmode="numeric" value="0" /></label>
           <label class="span-2">Descripción (la ven todos los clientes)<textarea id="pf-description" class="input" rows="3"></textarea></label>
           <div class="span-2 photo-field">
-            <span>Foto</span>
-            <img id="pf-preview" class="photo-preview hidden" alt="Vista previa de la foto" />
-            <input id="pf-photo" type="file" accept="image/jpeg,image/png,image/webp" />
-            <small id="pf-photo-status"></small>
+            <span>Fotos del producto · máximo 5</span>
+            <div id="pf-gallery" class="admin-gallery"></div>
+            <input id="pf-photo" type="file" accept="image/jpeg,image/png,image/webp" multiple />
+            <button id="pf-photo-clear" class="btn btn-secondary" type="button">Borrar foto principal actual</button>
+            <small id="pf-photo-status" role="status"></small>
           </div>
           <label class="check-row"><input id="pf-destacado" type="checkbox" /> Destacado</label>
           <label class="check-row"><input id="pf-activo" type="checkbox" checked /> Activo (visible para clientes)</label>
@@ -203,7 +204,9 @@
     </div>
   </div>
 
+  <script src="product-media.js"></script>
   <script src="dashboard.js"></script>
+  <script src="dashboard-media.js"></script>
   <script src="dashboard-catalog.js"></script>
   <script>initDashboard();</script>
 </body>

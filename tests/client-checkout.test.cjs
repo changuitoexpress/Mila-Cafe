@@ -82,6 +82,7 @@ function setup(script = "main.js") {
       createElement: () => element(`created-${++createdCount}`),
     },
   });
+  vm.runInContext(source("product-media.js"), context);
   vm.runInContext(source(script), context);
   const run = (code) => vm.runInContext(code, context);
   if (script === "main.js") run(`currentUser = {id: "client-a", name: "Prueba", phone: "0000000000", wallet_balance: 20};
