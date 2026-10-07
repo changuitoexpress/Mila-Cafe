@@ -9,6 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,0..144,500&family=Work+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="product-sheet.css" />
 </head>
 <body class="dashboard-page">
   <header class="dashboard-topbar">
@@ -120,7 +121,10 @@
             <p class="eyebrow">Catálogo</p>
             <h2>Productos</h2>
           </div>
-          <button id="product-add" class="btn btn-primary" type="button">+ Agregar producto</button>
+          <div class="product-toolbar-actions">
+            <button id="option-editor-open" class="btn btn-secondary" type="button">Grupos de complementos</button>
+            <button id="product-add" class="btn btn-primary" type="button">+ Agregar producto</button>
+          </div>
         </div>
         <div class="filter-row product-filters">
           <input id="product-search" class="input" type="search" placeholder="Buscar producto…" aria-label="Buscar producto" />
@@ -183,12 +187,47 @@
           </div>
           <label class="check-row"><input id="pf-destacado" type="checkbox" /> Destacado</label>
           <label class="check-row"><input id="pf-activo" type="checkbox" checked /> Activo (visible para clientes)</label>
+          <section class="span-2">
+            <h3>Complementos</h3>
+            <p>Las asignaciones se guardan al marcar o desmarcar.</p>
+            <div id="pf-option-groups"></div>
+            <p id="pf-options-feedback" class="error-text" role="status"></p>
+            <button id="pf-manage-groups" class="btn btn-secondary" type="button">Editar grupos y opciones</button>
+          </section>
           <p id="pf-error" class="error-text span-2" role="alert"></p>
           <button id="pf-save" class="btn btn-primary span-2" type="submit">Guardar producto</button>
         </form>
       </div>
     </div>
   </main>
+
+  <div id="option-editor-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="option-editor-title">
+    <div class="modal-card product-modal-card">
+      <button id="option-editor-close" class="modal-close" type="button" aria-label="Cerrar editor">✕</button>
+      <h2 id="option-editor-title" class="modal-title">Grupos de complementos</h2>
+      <label for="og-select">Grupo</label>
+      <select id="og-select" class="input"></select>
+      <form id="option-group-form" class="admin-form">
+        <label class="span-2">Nombre del grupo<input id="og-name" class="input" required /></label>
+        <label>Máximo de opciones<input id="og-max" class="input" type="number" min="1" step="1" value="1" required /></label>
+        <label>Orden<input id="og-order" class="input" type="number" step="1" value="0" /></label>
+        <label class="check-row"><input id="og-required" type="checkbox" /> Obligatorio</label>
+        <label class="check-row"><input id="og-active" type="checkbox" checked /> Activo</label>
+        <button class="btn btn-primary span-2" type="submit">Guardar grupo</button>
+      </form>
+      <h3 class="section-title">Opciones del grupo</h3>
+      <div id="group-options-list"></div>
+      <form id="option-form" class="admin-form">
+        <label class="span-2">Nombre de la opción<input id="op-name" class="input" required /></label>
+        <label>Precio extra (MXN)<input id="op-price" class="input" type="number" min="0" step="0.01" value="0" required /></label>
+        <label>Orden<input id="op-order" class="input" type="number" step="1" value="0" /></label>
+        <label class="check-row span-2"><input id="op-active" type="checkbox" checked /> Activa (desmarca para ocultar sin borrar)</label>
+        <button id="op-save" class="btn btn-primary" type="submit">Guardar opción</button>
+        <button id="op-new" class="btn btn-secondary" type="button">Nueva opción</button>
+      </form>
+      <p id="option-editor-feedback" class="error-text" role="status"></p>
+    </div>
+  </div>
 
   <div id="pin-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="pin-modal-title">
     <div class="modal-card">
@@ -205,8 +244,10 @@
   </div>
 
   <script src="product-media.js"></script>
+  <script src="product-customization.js"></script>
   <script src="dashboard.js"></script>
   <script src="dashboard-media.js"></script>
+  <script src="dashboard-options.js"></script>
   <script src="dashboard-catalog.js"></script>
   <script>initDashboard();</script>
 </body>

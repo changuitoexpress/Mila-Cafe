@@ -19,6 +19,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="product-sheet.css" />
 </head>
 <body>
 
@@ -137,10 +138,11 @@
   </div>
 
   <!-- ============ MODAL: DETALLE DE PRODUCTO ============ -->
-  <div id="modal-product" class="modal-overlay hidden">
-    <div class="modal-card">
-      <button class="modal-close" data-close>✕</button>
+  <div id="modal-product" class="modal-overlay product-sheet hidden" role="dialog" aria-modal="true" aria-label="Personalizar producto">
+    <div class="modal-card product-sheet-card">
+      <button id="modal-product-close" class="modal-close" data-close type="button" aria-label="Cerrar detalle">✕</button>
       <div id="modal-product-body"></div>
+      <div id="product-sheet-footer" class="sheet-bottom hidden"></div>
     </div>
   </div>
 
@@ -192,6 +194,7 @@
       </div>
 
       <button id="btn-checkout" class="btn btn-primary btn-block">Confirmar pedido</button>
+      <p id="checkout-error" class="error-text" role="alert"></p>
     </div>
   </div>
 
@@ -229,6 +232,8 @@
   </button>
 
   <script src="product-media.js"></script>
+  <script src="product-customization.js"></script>
+  <script src="client-product-sheet.js"></script>
   <script src="main.js"></script>
   <script src="pwa.js"></script>
 </body>

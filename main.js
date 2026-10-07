@@ -43,6 +43,7 @@ let activeQty = 1;
 let favoriteProductIds = new Set();
 let categoryObserver = null;
 let menuSearch = "";
+let checkoutBusy = false;
 
 // ============================================================
 // UTILIDADES
@@ -59,11 +60,16 @@ function showToast(msg) {
 }
 
 function openModal(id) { $(id).classList.remove("hidden"); }
-function closeModal(id) { $(id).classList.add("hidden"); }
+function closeModal(id) {
+  $(id).classList.add("hidden");
+  if (id === "#modal-product") document.body.classList.remove("product-sheet-open");
+}
 
 $$("[data-close]").forEach((btn) =>
   btn.addEventListener("click", (e) => {
-    e.target.closest(".modal-overlay").classList.add("hidden");
+    const modal = e.target.closest(".modal-overlay");
+    modal.classList.add("hidden");
+    if (modal.id === "modal-product") document.body.classList.remove("product-sheet-open");
   })
 );
 
@@ -613,8 +619,7 @@ function renderProductCard(product) {
   });
   card.querySelector(".quick-add-btn").addEventListener("click", (event) => {
     event.stopPropagation();
-    addProductToCart(product, 1);
-    showToast(`${product.name} agregado al carrito`);
+    openProductModal(product);
   });
   return card;
 }
@@ -709,64 +714,29 @@ async function loadProducts() {
 }
 
 function openProductModal(product) {
+  if (checkoutBusy) { showToast("Espera a que termine de registrarse tu pedido."); return; }
   activeProduct = product;
-  activeQty = 1;
-  renderProductModal();
   openModal("#modal-product");
+  window.MilaProductSheet.open(product, supabaseClient, (line) => {
+    addProductToCart(product, line.qty, line);
+    closeModal("#modal-product");
+    showToast(`${product.name} agregado al carrito`);
+  }, () => closeModal("#modal-product"));
 }
 
-function renderProductModal() {
-  const p = activeProduct;
-  $("#modal-product-body").innerHTML = `
-    ${window.MilaMedia.carousel(p)}
-    <p class="eyebrow">${p.category || "Café"}</p>
-    <h2 class="product-modal-title">${p.name}</h2>
-    <p class="product-modal-price">$${money(p.price)} · <span class="cashback-badge">Gana $${money((p.price * CASHBACK_PERCENT) / 100)} (5%)</span></p>
-
-    <div class="product-modal-section">
-      <h4>Descripción</h4>
-      <p>${p.description || "—"}</p>
-    </div>
-    <div class="product-modal-section">
-      <h4>Preparación</h4>
-      <p>${p.preparation || "—"}</p>
-    </div>
-
-    <div class="qty-row">
-      <button class="qty-btn" id="qty-minus">−</button>
-      <span class="qty-value" id="qty-value">${activeQty}</span>
-      <button class="qty-btn" id="qty-plus">+</button>
-    </div>
-
-    <button class="btn btn-primary btn-block" id="btn-add-cart">Agregar al carrito</button>
-  `;
-  window.MilaMedia.bindCarousel($("#modal-product-body"));
-
-  $("#qty-minus").addEventListener("click", () => {
-    activeQty = Math.max(1, activeQty - 1);
-    $("#qty-value").textContent = activeQty;
-  });
-  $("#qty-plus").addEventListener("click", () => {
-    activeQty += 1;
-    $("#qty-value").textContent = activeQty;
-  });
-  $("#btn-add-cart").addEventListener("click", addToCart);
-}
-
-function addProductToCart(product, quantity = 1) {
-  const existing = cart.find((c) => c.product.id === product.id);
+function addProductToCart(product, quantity = 1, custom = {}) {
+  if (checkoutBusy) throw new Error("Espera a que termine de registrarse tu pedido.");
+  const line = window.MilaOptions.makeLine(product, quantity, custom);
+  const errors = window.MilaOptions.validate(product.optionGroups || [], line.opciones);
+  if (errors.length) throw new Error(errors[0].message);
+  const key = window.MilaOptions.signature(line);
+  const existing = cart.find((c) => window.MilaOptions.signature(c) === key);
   if (existing) {
     existing.qty += quantity;
   } else {
-    cart.push({ product, qty: quantity });
+    cart.push(line);
   }
   updateCartBadge();
-}
-
-function addToCart() {
-  addProductToCart(activeProduct, activeQty);
-  closeModal("#modal-product");
-  showToast(`${activeProduct.name} agregado al carrito`);
 }
 
 function updateCartBadge() {
@@ -797,24 +767,33 @@ $("#btn-cart").addEventListener("click", openCart);
 $("#floating-cart")?.addEventListener("click", openCart);
 
 function cartSubtotal() {
-  return cart.reduce((sum, c) => sum + c.product.price * c.qty, 0);
+  return cart.reduce((sum, c) => sum + window.MilaOptions.unitPrice(c) * c.qty, 0);
 }
 
 function renderCart() {
   const wrap = $("#cart-items");
   wrap.innerHTML = "";
-  cart.forEach((c) => {
+  cart.forEach((c, index) => {
     const row = document.createElement("div");
     row.className = "cart-item-row";
     row.innerHTML = `
       <div>
-        <div class="name">${c.product.name}</div>
-        <div class="meta">${c.qty} × $${money(c.product.price)}</div>
+        <div class="name">${window.MilaMedia.escape(c.product.name)}</div>
+        <div class="meta">${c.qty} × MXN ${money(window.MilaOptions.unitPrice(c))}</div>
+        ${window.MilaOptions.detailHtml(c)}
+        <button class="cart-line-remove" type="button" data-line-index="${index}">Quitar esta línea</button>
       </div>
-      <div>$${money(c.product.price * c.qty)}</div>
+      <div>$${money(window.MilaOptions.unitPrice(c) * c.qty)}</div>
     `;
     wrap.appendChild(row);
   });
+  wrap.querySelectorAll("[data-line-index]").forEach((button) => button.addEventListener("click", () => {
+    if (checkoutBusy) return;
+    cart.splice(Number(button.dataset.lineIndex), 1);
+    updateCartBadge();
+    if (!cart.length) closeModal("#modal-cart");
+    else renderCart();
+  }));
 
   const subtotal = cartSubtotal();
   const walletAvailable = Number(currentUser.wallet_balance || 0);
@@ -853,6 +832,7 @@ function updateCartSummary() {
 $("#btn-checkout").addEventListener("click", handleCheckout);
 
 async function handleCheckout() {
+  if (checkoutBusy || !cart.length) return;
   const subtotal = cartSubtotal();
   const useWallet = $("#use-wallet-checkbox").checked;
   const walletAvailable = Number(currentUser.wallet_balance || 0);
@@ -874,7 +854,13 @@ async function handleCheckout() {
 
   // Guardamos una copia de los items del carrito ANTES de vaciarlo,
   // porque los necesitamos para armar el mensaje de WhatsApp.
-  const cartSnapshot = cart.map((c) => ({ name: c.product.name, qty: c.qty, price: c.product.price }));
+  const checkoutLines = cart.map((c) => ({ ...c, product: { ...c.product },
+    opciones: (c.opciones || []).map((option) => ({ ...option })),
+    alergias: [...window.MilaOptions.allergies(c.alergias)] }));
+  const cartSnapshot = checkoutLines.map((c) => ({
+    name: c.product.name, qty: c.qty, price: window.MilaOptions.unitPrice(c),
+    opciones: c.opciones, notas: c.notas || "", alergias: c.alergias,
+  }));
 
   if (deliveryType === "delivery" && Object.values(delivery).some((value) => !value)) {
     $("#delivery-error").textContent = "Completa todos los datos de entrega.";
@@ -883,7 +869,15 @@ async function handleCheckout() {
   }
   $("#delivery-error") && ($("#delivery-error").textContent = "");
 
+  checkoutBusy = true;
+  $("#btn-checkout").disabled = true;
+  $("#checkout-error").textContent = "";
   try {
+    const groups = await window.MilaOptions.load(supabaseClient, [...new Set(checkoutLines.map((line) => line.product.id))]);
+    checkoutLines.forEach((line) => {
+      const errors = window.MilaOptions.validate(groups.get(line.product.id) || [], line.opciones);
+      if (errors.length) throw new Error(`${line.product.name}: ${errors[0].message} Quita esta línea y agrégala otra vez.`);
+    });
     // 1. Crear la orden (pending)
     const { data: order, error: orderErr } = await supabaseClient
       .from("orders")
@@ -895,6 +889,8 @@ async function handleCheckout() {
         fraccionamiento: deliveryType === "delivery" ? delivery.fraccionamiento : null,
         calle: deliveryType === "delivery" ? delivery.calle : null,
         numero: deliveryType === "delivery" ? delivery.numero : null,
+        alergias: checkoutLines.filter((line) => line.alergias.length)
+          .map((line) => `${line.product.name}: ${line.alergias.join(", ")}`).join("\n") || null,
       })
       .select()
       .single();
@@ -902,12 +898,15 @@ async function handleCheckout() {
 
     // 2. Insertar los productos del carrito (esto dispara el trigger
     //    que calcula total y cashback_earned en la tabla orders)
-    const itemsPayload = cart.map((c) => ({
+    const itemsPayload = checkoutLines.map((c) => ({
       order_id: order.id,
       product_id: c.product.id,
       quantity: c.qty,
-      unit_price: c.product.price,
+      unit_price: window.MilaOptions.unitPrice(c),
       cashback_percent: CASHBACK_PERCENT,
+      opciones: c.opciones,
+      notas: c.notas || "",
+      alergias: c.alergias,
     }));
     const { error: itemsErr } = await supabaseClient.from("order_items").insert(itemsPayload);
     if (itemsErr) throw itemsErr;
@@ -937,7 +936,11 @@ async function handleCheckout() {
     closeModal("#modal-cart");
   } catch (err) {
     console.error(err);
-    showToast("No se pudo registrar el pedido. Intenta de nuevo.");
+    $("#checkout-error").textContent = `No se pudo registrar el pedido. ${err.message || "Intenta de nuevo."}`;
+    showToast("No se pudo registrar el pedido. Revisa el mensaje en el carrito.");
+  } finally {
+    checkoutBusy = false;
+    $("#btn-checkout").disabled = false;
   }
 }
 
@@ -948,6 +951,7 @@ function buildWhatsappMessage(order) {
   lines.push(`—————————————`);
   order.items.forEach((it) => {
     lines.push(`${it.qty}x ${it.name} — $${money(it.price * it.qty)}`);
+    lines.push(...window.MilaOptions.whatsappDetails(it));
   });
   lines.push(`—————————————`);
   lines.push(`Subtotal: $${money(order.subtotal)}`);
@@ -968,6 +972,8 @@ function showOrderConfirmation(order) {
     ? "Tu pedido fue recibido, un repartidor te lo llevará pronto."
     : "Tu pedido fue recibido, pásalo a recoger en unos minutos.";
   $("#ticket-detail").innerHTML = `
+    <div class="ticket-items">${(order.items || []).map((item) =>
+      `<div class="order-item-detail"><strong>${item.qty} × ${window.MilaMedia.escape(item.name)}</strong>${window.MilaOptions.detailHtml(item)}</div>`).join("")}</div>
     <div class="row"><span>Total a pagar</span><span>$${money(order.total)}</span></div>
     <div class="row"><span>Saldo aplicado</span><span>-$${money(order.wallet_used)}</span></div>
     <div class="row"><span>Forma de pago</span><span>${order.payment_method}</span></div>

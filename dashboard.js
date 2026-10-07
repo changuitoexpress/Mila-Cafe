@@ -214,7 +214,7 @@ async function loadRelatedData(orders) {
   if (!orderIds.length) return;
   const { data: itemRows, error: itemsError } = await supabaseDashboardClient
     .from("order_items")
-    .select("order_id, product_id, quantity, unit_price")
+    .select("id, order_id, product_id, quantity, unit_price, opciones, notas, alergias")
     .in("order_id", orderIds);
   if (itemsError) {
     console.warn("No se pudieron cargar productos de pedidos:", itemsError);
@@ -257,8 +257,8 @@ function renderOrderProducts(order) {
   const items = orderItemsMap.get(order.id) || [];
   if (!items.length) return "Productos no disponibles";
   return items
-    .map((item) => `${item.quantity} × ${productMap.get(item.product_id)?.name || "Producto"} ($${money(item.unit_price)})`)
-    .join(" · ");
+    .map((item) => `<div class="order-item-detail"><strong>${item.quantity} × ${window.MilaMedia.escape(productMap.get(item.product_id)?.name || "Producto")} ($${money(item.unit_price)})</strong>${window.MilaOptions.detailHtml(item)}</div>`)
+    .join("");
 }
 
 function renderOrders() {
@@ -291,12 +291,13 @@ function renderOrders() {
         </div>
         <div class="order-card-grid">
           <div><span>Cliente</span><strong>${profile?.name || "Cliente"}${profile?.phone ? ` · ${profile.phone}` : ""}</strong></div>
-          <div><span>Productos</span><strong>${renderOrderProducts(order)}</strong></div>
+          <div><span>Productos</span><div>${renderOrderProducts(order)}</div></div>
           <div><span>Total</span><strong>$${money(order.total)}</strong></div>
           <div><span>Forma de pago</span><strong>${order.payment_method || "No indicada"}</strong></div>
           <div><span>Entrega</span><strong>${deliveryLabel(order)}</strong></div>
           <div><span>Dirección</span><strong>${addressLabel(order)}</strong></div>
         </div>
+        ${window.MilaOptions.allergies(order.alergias).length ? `<p class="allergy-alert"><strong>ALERGIAS:</strong> ${window.MilaMedia.escape(window.MilaOptions.allergies(order.alergias).join(", "))}</p>` : ""}
         ${actions}
       </article>
     `;

@@ -26,6 +26,7 @@ function initCatalogAdmin() {
   });
   $("#pf-category").addEventListener("change", syncNewCategoryField);
   window.AdminMedia.init();
+  window.AdminOptions.init();
   $("#product-form").addEventListener("submit", saveProductForm);
   $("#store-form").addEventListener("submit", saveStoreForm);
   $("#store-toggle").addEventListener("click", toggleStoreOpen);
@@ -162,6 +163,7 @@ function openProductForm(product) {
   $("#pf-photo-status").textContent = "";
   window.AdminMedia.open(product);
   $("#product-modal").classList.remove("hidden");
+  window.AdminOptions.assignments(product);
   $("#pf-name").focus();
 }
 

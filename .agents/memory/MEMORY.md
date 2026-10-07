@@ -2,3 +2,4 @@
 - [Admin writes via PIN RPCs](admin-writes-via-rpc.md) — admin writes use admin_* RPCs with PIN; user runs all SQL; dual active/activo; etapa vs status.
 - [Cashback del negocio](cashback-policy.md) — el cashback es 5% para todos los productos, no depende de la categoría.
 - [Supabase public schema](supabase-public-schema.md) — publishable keys can read tables but cannot access REST OpenAPI; inspect empty tables with narrow SELECT probes.
+- [Pedidos personalizados](custom-orders.md) — solo asignaciones, grupos y opciones activos; un pedido puede repetir producto con distintas configuraciones.

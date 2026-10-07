@@ -41,6 +41,10 @@ body{
 .gallery-dot:focus-visible{ outline:2px solid var(--copper); outline-offset:4px; }
 .product-gallery-empty{ padding:28px; text-align:center; background:var(--cream); color:var(--espresso-soft); }
 .admin-gallery{ display:flex; gap:12px; flex-wrap:wrap; }
+.product-toolbar-actions{ display:flex; gap:8px; flex-wrap:wrap; }
+.group-option-row{ display:flex; justify-content:space-between; align-items:center; gap:12px; padding:14px 0; border-bottom:1px solid var(--cream-2); }
+.option-assignment-row{ min-height:44px; padding:8px 0; }
+.cart-line-remove{ background:none; border:0; text-decoration:underline; font:inherit; font-size:12px; cursor:pointer; min-height:40px; color:var(--espresso); padding:0; }
 .admin-gallery-photo{ width:150px; display:flex; flex-direction:column; gap:6px; }
 .admin-gallery-photo img{ width:150px; height:110px; object-fit:cover; border-radius:10px; }
 .photo-actions{ display:flex; flex-wrap:wrap; gap:4px; }

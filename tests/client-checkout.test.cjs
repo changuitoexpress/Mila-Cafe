@@ -33,6 +33,7 @@ function setup(script = "main.js") {
         setAttribute() {}, focus() { this.focused = true; },
         appendChild(child) { this.children.push(child); },
         querySelector(child) { return element(`${selector} ${child}`); },
+        querySelectorAll() { return []; },
       });
     }
     return elements.get(selector);
@@ -46,10 +47,12 @@ function setup(script = "main.js") {
     from(table) {
       const call = { table, filters: [], payload: null, operation: "select" };
       calls.push(call);
-      const result = responseQueue.shift() || { data: null, error: null };
+      const result = table === "product_option_groups" ? { data: [], error: null }
+        : responseQueue.shift() || { data: null, error: null };
       return {
         select(fields) { call.fields = fields; return this; },
         eq(...args) { call.filters.push(args); return this; },
+        in(...args) { call.filters.push(args); return this; },
         order(...args) { call.order = args; return this; },
         limit(value) { call.limit = value; return this; },
         insert(payload) { call.payload = payload; call.operation = "insert"; return this; },
@@ -83,6 +86,7 @@ function setup(script = "main.js") {
     },
   });
   vm.runInContext(source("product-media.js"), context);
+  vm.runInContext(source("product-customization.js"), context);
   vm.runInContext(source(script), context);
   const run = (code) => vm.runInContext(code, context);
   if (script === "main.js") run(`currentUser = {id: "client-a", name: "Prueba", phone: "0000000000", wallet_balance: 20};
@@ -175,11 +179,12 @@ test("delivery checkout needs only three address fields, saves them and inserts 
   );
   h.run("showOrderConfirmation = () => {}");
   await h.run("handleCheckout()");
-  assert.equal(h.calls[0].payload.fraccionamiento, "Centro");
-  assert.equal("referencias" in h.calls[0].payload, false);
-  assert.equal(h.calls[1].payload[0].cashback_percent, 5);
+  const writes = h.calls.filter((call) => call.operation === "insert");
+  assert.equal(writes[0].payload.fraccionamiento, "Centro");
+  assert.equal("referencias" in writes[0].payload, false);
+  assert.equal(writes[1].payload[0].cashback_percent, 5);
   assert.equal(JSON.parse(h.storage.get("milaCafeAddress")).numero, "7");
-  assert.deepEqual(h.calls.map((call) => call.operation), ["insert", "insert", "select"]);
+  assert.deepEqual(h.calls.map((call) => call.operation), ["select", "insert", "insert", "select"]);
 });
 
 test("cart estimates exactly 5% even for stale products and wallet use", () => {
@@ -203,8 +208,9 @@ test("pickup checkout accepts Terminal and does not replace the saved address", 
   );
   h.run("showOrderConfirmation = () => {}");
   await h.run("handleCheckout()");
-  assert.equal(h.calls[0].payload.payment_method, "Terminal (tarjeta)");
-  assert.equal(h.calls[0].payload.fraccionamiento, null);
+  const orderWrite = h.calls.find((call) => call.operation === "insert");
+  assert.equal(orderWrite.payload.payment_method, "Terminal (tarjeta)");
+  assert.equal(orderWrite.payload.fraccionamiento, null);
   assert.equal(h.storage.get("milaCafeAddress"), stored);
 });
 

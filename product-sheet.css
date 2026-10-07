@@ -1,0 +1,513 @@
+/* Mila Café — full-screen product sheet
+   Fraunces display / Work Sans interface, cream paper and espresso ink. */
+
+body.product-sheet-open {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+#modal-product.product-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  padding: 0;
+  overflow: hidden;
+  background: rgba(43, 27, 18, .56);
+  overscroll-behavior: contain;
+}
+
+#modal-product.product-sheet.hidden {
+  display: none !important;
+}
+
+#modal-product.product-sheet .modal-card.product-sheet-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  height: 100dvh;
+  max-height: none;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border-radius: 0;
+  background: var(--cream, #F6EFE2);
+  color: var(--espresso, #2B1B12);
+  box-shadow: none;
+  overscroll-behavior: contain;
+}
+
+#modal-product.product-sheet .modal-close {
+  z-index: 5;
+  top: max(12px, env(safe-area-inset-top));
+  right: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid rgba(43, 27, 18, .12);
+  border-radius: 50%;
+  background: rgba(246, 239, 226, .94);
+  color: var(--espresso, #2B1B12);
+  font: 500 19px/1 'Work Sans', sans-serif;
+  box-shadow: 0 3px 12px rgba(43, 27, 18, .12);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#modal-product.product-sheet .modal-close:hover {
+  background: #fff;
+}
+
+#modal-product.product-sheet :is(button, input, textarea, select, a):focus-visible {
+  outline: 3px solid var(--copper, #B9814A);
+  outline-offset: 3px;
+}
+
+#modal-product-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 0 0 calc(30px + env(safe-area-inset-bottom));
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-color: var(--copper) var(--cream-2);
+  scrollbar-width: thin;
+  touch-action: pan-x pan-y pinch-zoom;
+}
+
+/* Gallery track stays swipeable horizontally while the sheet scrolls vertically. */
+#modal-product.product-sheet .product-gallery {
+  position: relative;
+  overflow: hidden;
+  background: var(--cream-2, #EFE3CE);
+}
+
+#modal-product.product-sheet .gallery-track {
+  height: clamp(220px, 34dvh, 340px);
+  min-height: 220px;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x pinch-zoom;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+#modal-product.product-sheet .gallery-track img {
+  height: 100%;
+  min-height: 220px;
+  object-fit: cover;
+}
+
+#modal-product.product-sheet .gallery-dots {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  align-items: center;
+  min-height: 42px;
+  padding: 12px 16px 10px;
+  background: linear-gradient(transparent, rgba(43, 27, 18, .28));
+}
+
+#modal-product.product-sheet .gallery-dot {
+  width: 8px;
+  height: 8px;
+  border: 1px solid rgba(255, 255, 255, .9);
+  background: rgba(246, 239, 226, .7);
+}
+
+#modal-product.product-sheet .gallery-dot.is-active {
+  width: 22px;
+  border-radius: 99px;
+  background: var(--cream, #F6EFE2);
+}
+
+#modal-product.product-sheet .product-gallery-empty {
+  min-height: 220px;
+  display: grid;
+  place-items: center;
+  color: var(--espresso-soft, #4A3324);
+  background:
+    radial-gradient(ellipse at 78% 23%, rgba(185, 129, 74, .16), transparent 36%),
+    var(--cream-2, #EFE3CE);
+  font: 500 13px/1.5 'Work Sans', sans-serif;
+}
+
+#modal-product.product-sheet .sheet-heading {
+  padding: 25px 22px 0;
+}
+
+#modal-product.product-sheet .sheet-heading h1,
+#modal-product.product-sheet .sheet-heading h2 {
+  max-width: 18ch;
+  color: var(--espresso, #2B1B12);
+  font: 600 clamp(26px, 7vw, 36px)/1.04 'Fraunces', Georgia, serif;
+  letter-spacing: -.035em;
+  text-wrap: balance;
+}
+
+#modal-product.product-sheet .sheet-description {
+  padding: 9px 22px 0;
+  color: var(--espresso-soft, #4A3324);
+  font: 400 14px/1.6 'Work Sans', sans-serif;
+}
+
+#modal-product.product-sheet .sheet-section {
+  margin: 23px 22px 0;
+  padding: 0 0 21px;
+  border-bottom: 1px solid rgba(74, 51, 36, .15);
+}
+
+#modal-product.product-sheet .sheet-section:last-of-type {
+  border-bottom: 0;
+}
+
+#modal-product.product-sheet fieldset.option-group {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+#modal-product.product-sheet .group-heading {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 30px;
+  color: var(--espresso, #2B1B12);
+  font: 600 17px/1.25 'Fraunces', Georgia, serif;
+}
+
+#modal-product.product-sheet .group-rule {
+  flex: 1;
+  height: 1px;
+  min-width: 18px;
+  background: rgba(74, 51, 36, .17);
+}
+
+#modal-product.product-sheet .required-tag {
+  flex: 0 0 auto;
+  padding: 5px 8px;
+  border: 1px solid rgba(185, 129, 74, .46);
+  border-radius: 999px;
+  background: rgba(185, 129, 74, .1);
+  color: var(--copper-dark, #8F5F32);
+  font: 600 9px/1.2 'JetBrains Mono', monospace;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+#modal-product.product-sheet .choice-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  margin-top: 7px;
+  padding: 8px 12px;
+  border: 1px solid rgba(74, 51, 36, .14);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, .56);
+  color: var(--espresso, #2B1B12);
+  cursor: pointer;
+  transition: border-color .16s ease, background-color .16s ease, transform .16s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#modal-product.product-sheet .choice-row:hover {
+  border-color: rgba(143, 95, 50, .55);
+  background: #fff;
+}
+
+#modal-product.product-sheet .choice-row:active {
+  transform: scale(.992);
+}
+
+#modal-product.product-sheet .choice-row:has(input:checked) {
+  border-color: var(--copper-dark, #8F5F32);
+  background: rgba(185, 129, 74, .1);
+  box-shadow: inset 0 0 0 1px rgba(143, 95, 50, .16);
+}
+
+#modal-product.product-sheet .choice-row input {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--espresso, #2B1B12);
+  cursor: pointer;
+}
+
+#modal-product.product-sheet .choice-row input[type="radio"] {
+  border-radius: 50%;
+}
+
+#modal-product.product-sheet .choice-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: inherit;
+  font: 500 13px/1.4 'Work Sans', sans-serif;
+}
+
+#modal-product.product-sheet .choice-price {
+  flex: 0 0 auto;
+  color: var(--espresso-soft, #4A3324);
+  font: 600 12px/1.3 'JetBrains Mono', monospace;
+  white-space: nowrap;
+}
+
+#modal-product.product-sheet .option-group.is-invalid .group-heading {
+  color: var(--danger, #B4483E);
+}
+
+#modal-product.product-sheet .option-group.is-invalid .choice-row {
+  border-color: rgba(180, 72, 62, .48);
+}
+
+#modal-product.product-sheet .option-group.is-invalid .group-error {
+  display: block;
+  margin-top: 8px;
+  padding-left: 2px;
+  color: var(--danger, #B4483E);
+  font: 500 12px/1.45 'Work Sans', sans-serif;
+}
+
+#modal-product.product-sheet .group-error {
+  color: var(--danger, #B4483E);
+  font: 500 12px/1.45 'Work Sans', sans-serif;
+}
+
+#modal-product.product-sheet .allergy-choices {
+  display: grid;
+  gap: 7px;
+  margin-top: 9px;
+}
+
+#modal-product.product-sheet .allergy-choices .choice-row {
+  margin-top: 0;
+}
+
+#modal-product.product-sheet .allergy-extra {
+  display: block;
+  width: 100%;
+  min-height: 92px;
+  margin-top: 10px;
+  padding: 12px 13px;
+  resize: vertical;
+  border: 1px solid rgba(74, 51, 36, .19);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, .72);
+  color: var(--espresso, #2B1B12);
+  font: 400 13px/1.5 'Work Sans', sans-serif;
+}
+
+#modal-product.product-sheet .allergy-extra::placeholder {
+  color: #816f60;
+  opacity: 1;
+}
+
+#modal-product.product-sheet .sheet-bottom {
+  position: sticky;
+  flex: 0 0 auto;
+  z-index: 3;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  margin-top: 0;
+  padding: 14px 18px calc(14px + env(safe-area-inset-bottom));
+  border-top: 1px solid rgba(74, 51, 36, .12);
+  background: rgba(246, 239, 226, .97);
+  box-shadow: 0 -8px 22px rgba(43, 27, 18, .06);
+  backdrop-filter: blur(12px);
+}
+
+#modal-product.product-sheet .sheet-quantity {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: 14px;
+  min-height: 44px;
+  padding: 0 4px;
+  border: 1px solid rgba(74, 51, 36, .2);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .56);
+}
+
+#modal-product.product-sheet .sheet-quantity button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--espresso, #2B1B12);
+  font: 400 21px/1 'Work Sans', sans-serif;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#modal-product.product-sheet .sheet-quantity button:hover {
+  background: var(--cream-2, #EFE3CE);
+}
+
+#modal-product.product-sheet .sheet-quantity .value,
+#modal-product.product-sheet .sheet-quantity [data-quantity-value] {
+  min-width: 18px;
+  color: var(--espresso, #2B1B12);
+  text-align: center;
+  font: 600 14px/1 'JetBrains Mono', monospace;
+}
+
+#modal-product.product-sheet .sheet-add {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 52px;
+  padding: 0 19px;
+  border: 1px solid #21150f;
+  border-radius: 13px;
+  background: #21150f;
+  color: var(--cream, #F6EFE2);
+  font: 600 14px/1.25 'Work Sans', sans-serif;
+  cursor: pointer;
+  transition: background-color .16s ease, transform .16s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#modal-product.product-sheet .sheet-add:hover {
+  background: var(--espresso-soft, #4A3324);
+}
+
+#modal-product.product-sheet .sheet-add:active {
+  transform: scale(.99);
+}
+
+#modal-product.product-sheet .sheet-add:disabled {
+  opacity: .58;
+  cursor: not-allowed;
+}
+
+#modal-product.product-sheet .sheet-feedback {
+  min-height: 0;
+  color: var(--danger, #B4483E);
+  font: 500 12px/1.45 'Work Sans', sans-serif;
+}
+
+#modal-product.product-sheet .sheet-feedback:empty {
+  display: none;
+}
+
+/* Preparation notes stay legible in both the customer's cart and staff view. */
+.line-details,
+.order-item-detail {
+  display: block;
+  margin-top: 5px;
+  color: var(--espresso-soft, #4A3324);
+  font: 400 12px/1.5 'Work Sans', sans-serif;
+  overflow-wrap: anywhere;
+}
+
+.line-details > *,
+.order-item-detail > * {
+  margin-inline-end: 4px;
+}
+
+.allergy-alert {
+  display: block;
+  margin-top: 7px;
+  padding: 8px 10px;
+  border-left: 3px solid var(--danger, #B4483E);
+  border-radius: 0 8px 8px 0;
+  background: #f7e7e3;
+  color: #842f29;
+  font: 600 11px/1.45 'Work Sans', sans-serif;
+  overflow-wrap: anywhere;
+}
+
+@media (min-width: 720px) {
+  #modal-product.product-sheet {
+    align-items: center;
+    padding: 24px;
+    background: rgba(43, 27, 18, .58);
+  }
+
+  #modal-product.product-sheet .modal-card.product-sheet-card {
+    width: min(100%, 600px);
+    height: min(92dvh, 920px);
+    border: 1px solid rgba(246, 239, 226, .5);
+    border-radius: 22px;
+    box-shadow: 0 24px 80px rgba(30, 18, 11, .3);
+  }
+
+  #modal-product.product-sheet .gallery-track {
+    height: clamp(240px, 35dvh, 340px);
+  }
+
+  #modal-product.product-sheet .sheet-heading {
+    padding-right: 28px;
+    padding-left: 28px;
+  }
+
+  #modal-product.product-sheet .sheet-description {
+    padding-right: 28px;
+    padding-left: 28px;
+  }
+
+  #modal-product.product-sheet .sheet-section {
+    margin-right: 28px;
+    margin-left: 28px;
+  }
+
+  #modal-product.product-sheet .sheet-bottom {
+    padding-right: 26px;
+    padding-left: 26px;
+    padding-bottom: 18px;
+  }
+}
+
+@media (max-width: 380px) {
+  #modal-product.product-sheet .sheet-heading {
+    padding-top: 21px;
+  }
+
+  #modal-product.product-sheet .sheet-heading h1,
+  #modal-product.product-sheet .sheet-heading h2 {
+    font-size: 27px;
+  }
+
+  #modal-product.product-sheet .sheet-section {
+    margin-right: 16px;
+    margin-left: 16px;
+  }
+
+  #modal-product.product-sheet .sheet-heading,
+  #modal-product.product-sheet .sheet-description {
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #modal-product.product-sheet *,
+  #modal-product.product-sheet *::before,
+  #modal-product.product-sheet *::after {
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
