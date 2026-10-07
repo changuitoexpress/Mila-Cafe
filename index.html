@@ -60,7 +60,7 @@
         <button class="tab" data-tab="cuenta">Mi cuenta</button>
       </nav>
       <div class="topbar-actions">
-        <button id="header-search" class="header-icon-button" type="button" aria-label="Buscar en el menú">
+        <button id="header-search" class="header-icon-button" type="button" aria-label="Buscar en el menú" aria-expanded="false" aria-controls="menu-search-bar">
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.3"></circle><path d="m16 16 4.5 4.5"></path></svg>
         </button>
         <button id="header-favorites" class="header-icon-button" type="button" aria-label="Ver favoritos">
@@ -72,6 +72,11 @@
         </button>
       </div>
     </header>
+    <div id="menu-search-bar" class="menu-search-bar hidden" role="search">
+      <label class="search-label" for="menu-search-input">Buscar productos</label>
+      <input id="menu-search-input" class="input" type="search" placeholder="Buscar por nombre o descripción" autocomplete="off" />
+      <button id="menu-search-close" class="btn btn-secondary" type="button">Cerrar y limpiar</button>
+    </div>
     <nav id="category-chips" class="category-chips hidden" aria-label="Categorías del menú"></nav>
 
     <div id="menu-backdrop" class="menu-backdrop hidden"></div>
@@ -81,7 +86,7 @@
         <button id="menu-close" class="menu-close" type="button" aria-label="Cerrar menú">×</button>
       </div>
       <div id="category-menu-list" class="category-menu-list"></div>
-      <button id="menu-favorites" class="side-menu-item" type="button">♡ Favoritos</button>
+      <button id="menu-favorites" class="side-menu-item hidden" type="button">♡ Tus favoritos</button>
       <a id="admin-dashboard-link" class="side-menu-item admin-link hidden" href="dashboard.html">Panel de administración</a>
       <button id="menu-logout" class="side-menu-item side-menu-logout" type="button">Cerrar sesión</button>
     </aside>

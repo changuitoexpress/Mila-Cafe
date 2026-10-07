@@ -42,6 +42,7 @@ let activeProduct = null;  // producto abierto en el modal de detalle
 let activeQty = 1;
 let favoriteProductIds = new Set();
 let categoryObserver = null;
+let menuSearch = "";
 
 // ============================================================
 // UTILIDADES
@@ -85,6 +86,20 @@ $("#menu-favorites")?.addEventListener("click", () => {
 });
 $("#header-back")?.addEventListener("click", () => window.history.back());
 $("#header-favorites")?.addEventListener("click", () => scrollToSection("favorites-section"));
+$("#header-search").addEventListener("click", () => {
+  $("#menu-search-bar").classList.remove("hidden");
+  $("#header-search").setAttribute("aria-expanded", "true");
+  $("#menu-search-input").focus();
+});
+$("#menu-search-input").addEventListener("input", (event) => {
+  menuSearch = event.target.value;
+  renderMenu();
+});
+$("#menu-search-input").addEventListener("keydown", (event) => {
+  if (event.key === "Escape") closeMenuSearch();
+});
+$("#menu-search-close").addEventListener("click", closeMenuSearch);
+$(".menu-filter").addEventListener("click", () => scrollToSection("featured-section"));
 $$('input[name="delivery_type"]').forEach((input) =>
   input.addEventListener("change", toggleDeliveryFields)
 );
@@ -213,6 +228,11 @@ function handleLogout() {
   $("#address-feedback").textContent = "";
   $("#payment-error").textContent = "";
   currentUser = null;
+  updateAdminLinks();
+  menuSearch = "";
+  $("#menu-search-input").value = "";
+  $("#menu-search-bar").classList.add("hidden");
+  $("#header-search").setAttribute("aria-expanded", "false");
   products = [];
   cart = [];
   favoriteProductIds = new Set();
@@ -225,11 +245,89 @@ function handleLogout() {
   $("#login-error").textContent = "";
 }
 
-function updateAdminLinks() {
-  const isAdmin = currentUser?.is_admin === true;
-  ["#admin-dashboard-link", "#admin-dashboard-account"].forEach((selector) => {
-    $(selector)?.classList.toggle("hidden", !isAdmin);
+async function updateAdminLinks() {
+  const links = ["#admin-dashboard-link", "#admin-dashboard-account"];
+  links.forEach((selector) => $(selector)?.classList.add("hidden"));
+  const userId = currentUser?.id;
+  if (!userId) return;
+  // Comprobar el perfil real: no confiar en is_admin guardado en el dispositivo.
+  const { data, error } = await supabaseClient.from("profiles")
+    .select("is_admin").eq("id", userId).single();
+  if (currentUser?.id !== userId) return;
+  if (!error && data?.is_admin === true) {
+    links.forEach((selector) => $(selector)?.classList.remove("hidden"));
+  }
+}
+
+function closeMenuSearch() {
+  menuSearch = "";
+  $("#menu-search-input").value = "";
+  $("#menu-search-bar").classList.add("hidden");
+  $("#header-search").setAttribute("aria-expanded", "false");
+  renderMenu();
+  $("#header-search").focus();
+}
+
+function normalizeMenuText(value) {
+  return String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
+function getMenuSections() {
+  const term = normalizeMenuText(menuSearch).trim();
+  const visible = products.filter((product) => product.active === true && product.activo === true &&
+    (!term || normalizeMenuText(`${product.name || ""} ${product.description || ""}`).includes(term)))
+    .sort((a, b) => Number(a.orden || 0) - Number(b.orden || 0) ||
+      String(a.name || "").localeCompare(String(b.name || ""), "es"));
+  const sections = [];
+  const featured = visible.filter((product) => product.destacado === true);
+  if (featured.length) sections.push({ id: "featured-section", title: "Destacados", products: featured });
+  const favorites = currentUser?.id ? visible.filter((product) => favoriteProductIds.has(product.id)) : [];
+  if (favorites.length) sections.push({ id: "favorites-section", title: "Tus favoritos", products: favorites });
+  const categories = [...new Set(visible.map((product) => String(product.category || "Otros").trim() || "Otros"))]
+    .sort((a, b) => a.localeCompare(b, "es"));
+  categories.forEach((category, index) => sections.push({
+    id: slugify(category, index), title: category,
+    products: visible.filter((product) => (String(product.category || "Otros").trim() || "Otros") === category),
+  }));
+  return sections;
+}
+
+function renderMenu() {
+  const grid = $("#products-grid");
+  const sections = getMenuSections();
+  grid.innerHTML = "";
+  if (!sections.length) {
+    const empty = document.createElement("div");
+    empty.className = "menu-status menu-empty";
+    empty.textContent = "Sin resultados";
+    empty.setAttribute("role", "status");
+    grid.appendChild(empty);
+  }
+  sections.forEach(({ id, title, products: sectionProducts }) => {
+    const section = document.createElement("section");
+    section.id = id;
+    section.className = "category-group";
+    const heading = document.createElement("div");
+    heading.className = "category-heading";
+    const titleElement = document.createElement("h3");
+    titleElement.textContent = title;
+    const count = document.createElement("span");
+    count.textContent = `${sectionProducts.length} productos`;
+    heading.appendChild(titleElement);
+    heading.appendChild(count);
+    const sectionGrid = document.createElement("div");
+    sectionGrid.className = "category-products";
+    sectionProducts.forEach((product) => sectionGrid.appendChild(renderProductCard(product)));
+    section.appendChild(heading);
+    section.appendChild(sectionGrid);
+    grid.appendChild(section);
   });
+  $(".menu-filter").classList.toggle("hidden", !sections.some((section) => section.id === "featured-section"));
+  const hasFavorites = sections.some((section) => section.id === "favorites-section");
+  $("#menu-favorites").classList.toggle("hidden", !hasFavorites);
+  $("#header-favorites").classList.toggle("hidden", !hasFavorites);
+  renderCategoryNavigation(sections);
+  observeCategorySections(sections);
 }
 
 function openMenu() {
@@ -420,14 +518,14 @@ async function loadFavorites() {
   favoriteProductIds = new Set((data || []).map((favorite) => favorite.product_id));
 }
 
-function renderCategoryNavigation(categories) {
+function renderCategoryNavigation(sections) {
   const chips = $("#category-chips");
   const menuList = $("#category-menu-list");
   if (!chips || !menuList) return;
 
   chips.innerHTML = "";
   menuList.innerHTML = "";
-  chips.classList.toggle("hidden", categories.length === 0);
+  chips.classList.toggle("hidden", sections.length === 0);
 
   const exploreTab = document.createElement("button");
   exploreTab.className = "category-chip category-tab active";
@@ -437,20 +535,19 @@ function renderCategoryNavigation(categories) {
   exploreTab.addEventListener("click", () => scrollToSection("menu-top"));
   chips.appendChild(exploreTab);
 
-  categories.forEach((category, index) => {
-    const sectionId = slugify(category, index);
+  sections.forEach(({ title, id: sectionId }) => {
     const chip = document.createElement("button");
     chip.className = "category-chip category-tab";
     chip.type = "button";
     chip.dataset.section = sectionId;
-    chip.textContent = category;
+    chip.textContent = title;
     chip.addEventListener("click", () => scrollToSection(sectionId));
     chips.appendChild(chip);
 
     const menuItem = document.createElement("button");
     menuItem.className = "side-menu-item";
     menuItem.type = "button";
-    menuItem.textContent = category;
+    menuItem.textContent = title;
     menuItem.addEventListener("click", () => {
       closeMenu();
       scrollToSection(sectionId);
@@ -458,13 +555,6 @@ function renderCategoryNavigation(categories) {
     menuList.appendChild(menuItem);
   });
 
-  const favoriteChip = document.createElement("button");
-  favoriteChip.className = "category-chip category-tab category-chip-favorites";
-  favoriteChip.type = "button";
-  favoriteChip.dataset.section = "favorites-section";
-  favoriteChip.textContent = "♡ Favoritos";
-  favoriteChip.addEventListener("click", () => scrollToSection("favorites-section"));
-  chips.appendChild(favoriteChip);
 }
 
 function setActiveCategoryTab(sectionId) {
@@ -473,14 +563,13 @@ function setActiveCategoryTab(sectionId) {
   });
 }
 
-function observeCategorySections(categories) {
+function observeCategorySections(sections) {
   categoryObserver?.disconnect();
   if (!("IntersectionObserver" in window)) return;
 
   const sectionIds = [
     "menu-top",
-    ...categories.map((category, index) => slugify(category, index)),
-    "favorites-section",
+    ...sections.map((section) => section.id),
   ];
   categoryObserver = new IntersectionObserver(
     (entries) => {
@@ -560,33 +649,7 @@ async function toggleFavorite(product, button) {
 }
 
 function renderFavoritesSection() {
-  const previous = $("#favorites-section");
-  previous?.remove();
-
-  const section = document.createElement("section");
-  section.id = "favorites-section";
-  section.className = "category-group favorites-group";
-  const favorites = products.filter((product) => favoriteProductIds.has(product.id));
-  section.innerHTML = `
-    <div class="category-heading">
-      <h3>Favoritos</h3>
-      <span>${favorites.length} productos</span>
-    </div>
-  `;
-
-  if (favorites.length === 0) {
-    section.insertAdjacentHTML(
-      "beforeend",
-      '<div class="menu-status menu-empty"><strong>Aún no tienes favoritos.</strong><p>Toca el corazón de un producto para guardarlo aquí.</p></div>'
-    );
-  } else {
-    const favoritesGrid = document.createElement("div");
-    favoritesGrid.className = "category-products";
-    favorites.forEach((product) => favoritesGrid.appendChild(renderProductCard(product)));
-    section.appendChild(favoritesGrid);
-  }
-
-  $("#products-grid")?.appendChild(section);
+  renderMenu();
 }
 
 async function loadProducts() {
@@ -635,38 +698,7 @@ async function loadProducts() {
     return;
   }
 
-  const groupedProducts = new Map();
-  products.forEach((product) => {
-    const category = String(product.category || "Otros").trim() || "Otros";
-    if (!groupedProducts.has(category)) groupedProducts.set(category, []);
-    groupedProducts.get(category).push(product);
-  });
-
-  const categories = [...groupedProducts.keys()];
-  renderCategoryNavigation(categories);
-
-  groupedProducts.forEach((categoryProducts, category, map) => {
-    const categoryIndex = [...map.keys()].indexOf(category);
-    const group = document.createElement("section");
-    group.className = "category-group";
-    group.id = slugify(category, categoryIndex);
-
-    const heading = document.createElement("div");
-    heading.className = "category-heading";
-    heading.innerHTML = `<h3></h3><span>${categoryProducts.length} productos</span>`;
-    heading.querySelector("h3").textContent = category;
-
-    const categoryGrid = document.createElement("div");
-    categoryGrid.className = "category-products";
-
-    categoryProducts.forEach((product) => categoryGrid.appendChild(renderProductCard(product)));
-
-    group.appendChild(heading);
-    group.appendChild(categoryGrid);
-    grid.appendChild(group);
-  });
-  renderFavoritesSection();
-  observeCategorySections(categories);
+  renderMenu();
 }
 
 function openProductModal(product) {

@@ -11,11 +11,14 @@ function setup(script = "main.js") {
   const storage = new Map();
   const calls = [];
   const responseQueue = [];
+  let createdCount = 0;
   function element(selector) {
     if (!elements.has(selector)) {
       const classes = new Set();
       elements.set(selector, {
-        value: "", checked: false, disabled: false, textContent: "", style: {},
+        value: "", checked: false, disabled: false, textContent: "", style: {}, dataset: {}, children: [],
+        get innerHTML() { return this.html || ""; },
+        set innerHTML(value) { this.html = value; this.children = []; },
         listeners: {}, classList: {
           add: (...names) => names.forEach((name) => classes.add(name)),
           remove: (...names) => names.forEach((name) => classes.delete(name)),
@@ -27,7 +30,9 @@ function setup(script = "main.js") {
         },
         addEventListener(name, handler) { this.listeners[name] = handler; },
         closest() { return element(`${selector}-label`); },
-        setAttribute() {}, focus() {}, appendChild() {},
+        setAttribute() {}, focus() { this.focused = true; },
+        appendChild(child) { this.children.push(child); },
+        querySelector(child) { return element(`${selector} ${child}`); },
       });
     }
     return elements.get(selector);
@@ -74,7 +79,7 @@ function setup(script = "main.js") {
         if (selector === 'input[name="delivery_type"]') return delivery;
         return [];
       },
-      createElement: () => element("created"),
+      createElement: () => element(`created-${++createdCount}`),
     },
   });
   vm.runInContext(source(script), context);
@@ -212,4 +217,68 @@ test("WhatsApp omits historical references and dashboard only shows them if pres
   assert.match(dashboard.run("addressLabel(testOrder)"), /Referencias: REF_ANTIGUA/);
   dashboard.run("testOrder.referencias = null");
   assert.doesNotMatch(dashboard.run("addressLabel(testOrder)"), /Referencias|null|undefined/);
+});
+
+test("menu sections start with ordered active featured products, then favorites, then categories", () => {
+  const h = setup();
+  h.run(`products = [
+    {id:"late", name:"Latte", category:"Bebidas", activo:true, active:true, destacado:true, orden:8},
+    {id:"hidden", name:"Oculto", category:"Bebidas", activo:false, active:true, destacado:true, orden:0},
+    {id:"first", name:"Café", category:"Bebidas", activo:true, active:true, destacado:true, orden:1},
+    {id:"fav", name:"Pan", category:"Comida", activo:true, active:true, orden:2}
+  ]; favoriteProductIds = new Set(["fav", "hidden"]);`);
+  const sections = h.run("getMenuSections()");
+  assert.deepEqual(Array.from(sections, (section) => section.title), ["Destacados", "Tus favoritos", "Bebidas", "Comida"]);
+  assert.deepEqual(Array.from(sections[0].products, (product) => product.id), ["first", "late"]);
+  assert.deepEqual(Array.from(sections[1].products, (product) => product.id), ["fav"]);
+});
+
+test("search matches names and descriptions regardless of accents and case", () => {
+  const h = setup();
+  h.run(`products = [{id:"one",name:"Café",description:"BEBIDA FRÍA",category:"Bebidas",active:true,activo:true}];
+    menuSearch = "CAFE";`);
+  assert.equal(h.run("getMenuSections()[0].products[0].id"), "one");
+  h.run('menuSearch = "fria"');
+  assert.equal(h.run("getMenuSections()[0].products[0].id"), "one");
+  h.run('menuSearch = "inexistente"');
+  assert.equal(h.run("getMenuSections().length"), 0);
+});
+
+test("empty featured and favorites sections are not shown; visitors never get favorites", () => {
+  const h = setup();
+  h.run(`products = [{id:"one",name:"Pan",category:"Comida",active:true,activo:true}];`);
+  assert.deepEqual(Array.from(h.run("getMenuSections()"), (section) => section.title), ["Comida"]);
+  h.run('favoriteProductIds = new Set(["one"]); currentUser = null;');
+  assert.deepEqual(Array.from(h.run("getMenuSections()"), (section) => section.title), ["Comida"]);
+});
+
+test("dashboard links require a live profile with is_admin strictly true", async () => {
+  const h = setup();
+  h.run("currentUser.is_admin = true");
+  h.responseQueue.push({ data: { is_admin: false }, error: null });
+  await h.run("updateAdminLinks()");
+  assert.equal(h.element("#admin-dashboard-link").classList.contains("hidden"), true);
+  assert.equal(h.element("#admin-dashboard-account").classList.contains("hidden"), true);
+  h.responseQueue.push({ data: { is_admin: true }, error: null });
+  await h.run("updateAdminLinks()");
+  assert.equal(h.element("#admin-dashboard-link").classList.contains("hidden"), false);
+  assert.equal(h.element("#admin-dashboard-account").classList.contains("hidden"), false);
+  h.run("currentUser = null");
+  await h.run("updateAdminLinks()");
+  assert.equal(h.element("#admin-dashboard-link").classList.contains("hidden"), true);
+});
+
+test("search button opens and focuses; no matches show Sin resultados; closing clears", () => {
+  const h = setup();
+  h.run(`products = [{id:"one",name:"Café",category:"Bebidas",active:true,activo:true}];`);
+  h.element("#header-search").listeners.click();
+  assert.equal(h.element("#menu-search-input").focused, true);
+  assert.equal(h.element("#menu-search-bar").classList.contains("hidden"), false);
+  h.element("#menu-search-input").value = "ninguno";
+  h.element("#menu-search-input").listeners.input({ target: h.element("#menu-search-input") });
+  assert.equal(h.element("#products-grid").children[0].textContent, "Sin resultados");
+  h.element("#menu-search-close").listeners.click();
+  assert.equal(h.element("#menu-search-input").value, "");
+  assert.equal(h.element("#menu-search-bar").classList.contains("hidden"), true);
+  assert.equal(h.element("#products-grid").children[0].id, "category-bebidas-0");
 });
