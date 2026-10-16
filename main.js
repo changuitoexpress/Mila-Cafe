@@ -52,11 +52,13 @@ const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
 const money = (n) => Number(n || 0).toFixed(2);
 
+let toastTimer = null;
 function showToast(msg) {
   const el = $("#toast");
   el.textContent = msg;
   el.classList.remove("hidden");
-  setTimeout(() => el.classList.add("hidden"), 2600);
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.add("hidden"), 2600);
 }
 
 function openModal(id) { $(id).classList.remove("hidden"); }
@@ -334,6 +336,7 @@ function renderMenu() {
   $("#header-favorites").classList.toggle("hidden", !hasFavorites);
   renderCategoryNavigation(sections);
   observeCategorySections(sections);
+  window.MilaMotion?.menuRendered?.(grid);
 }
 
 function openMenu() {
@@ -351,7 +354,9 @@ function closeMenu() {
 function scrollToSection(sectionId) {
   const section = document.getElementById(sectionId);
   setActiveCategoryTab(sectionId);
-  section?.scrollIntoView({ behavior: "smooth", block: "start" });
+  // Keeps the chosen category highlighted while the page glides past the ones in between.
+  window.MilaMotion?.holdCategory?.(sectionId);
+  section?.scrollIntoView({ behavior: window.MilaMotion?.scrollBehavior?.() || "smooth", block: "start" });
 }
 
 function toggleDeliveryFields() {
@@ -492,10 +497,12 @@ function slugify(value, index) {
 // ============================================================
 $$(".tab").forEach((tab) =>
   tab.addEventListener("click", () => {
+    const previousTab = $(".tab.active")?.dataset.tab;
     $$(".tab").forEach((t) => t.classList.remove("active"));
     tab.classList.add("active");
     $$(".view").forEach((v) => v.classList.remove("active"));
     $(`#view-${tab.dataset.tab}`).classList.add("active");
+    window.MilaMotion?.viewChanged?.(previousTab, tab.dataset.tab);
     if (tab.dataset.tab === "cuenta") {
       refreshWalletUI();
       loadTransactions();
@@ -529,12 +536,15 @@ function renderCategoryNavigation(sections) {
   const menuList = $("#category-menu-list");
   if (!chips || !menuList) return;
 
+  // Re-renders (favorites, search) keep the highlighted category instead of flashing back to the first chip.
+  const previousSection = chips.querySelector(".category-tab.active")?.dataset.section;
+  const activeSection = sections.some((section) => section.id === previousSection) ? previousSection : "menu-top";
   chips.innerHTML = "";
   menuList.innerHTML = "";
   chips.classList.toggle("hidden", sections.length === 0);
 
   const exploreTab = document.createElement("button");
-  exploreTab.className = "category-chip category-tab active";
+  exploreTab.className = `category-chip category-tab${activeSection === "menu-top" ? " active" : ""}`;
   exploreTab.type = "button";
   exploreTab.dataset.section = "menu-top";
   exploreTab.textContent = "Explora el menú";
@@ -543,7 +553,7 @@ function renderCategoryNavigation(sections) {
 
   sections.forEach(({ title, id: sectionId }) => {
     const chip = document.createElement("button");
-    chip.className = "category-chip category-tab";
+    chip.className = `category-chip category-tab${sectionId === activeSection ? " active" : ""}`;
     chip.type = "button";
     chip.dataset.section = sectionId;
     chip.textContent = title;
@@ -567,6 +577,7 @@ function setActiveCategoryTab(sectionId) {
   $$(".category-tab").forEach((tab) => {
     tab.classList.toggle("active", tab.dataset.section === sectionId);
   });
+  window.MilaMotion?.categoryChanged?.(sectionId);
 }
 
 function observeCategorySections(sections) {
@@ -577,14 +588,18 @@ function observeCategorySections(sections) {
     "menu-top",
     ...sections.map((section) => section.id),
   ];
+  // Measured so the scroll spy follows the real height of the sticky header and category bar.
+  const stickyBottom = Math.round($("#category-chips")?.getBoundingClientRect?.().bottom || 0);
+  const headerOffset = stickyBottom > 0 ? stickyBottom + 8 : 132;
   categoryObserver = new IntersectionObserver(
     (entries) => {
+      if (window.MilaMotion?.categoryLocked?.()) return;
       const visible = entries
         .filter((entry) => entry.isIntersecting)
         .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
       if (visible[0]) setActiveCategoryTab(visible[0].target.id);
     },
-    { rootMargin: "-132px 0px -60% 0px", threshold: [0, 0.1, 0.4] }
+    { rootMargin: `-${headerOffset}px 0px -60% 0px`, threshold: [0, 0.1, 0.4] }
   );
 
   sectionIds
@@ -593,16 +608,21 @@ function observeCategorySections(sections) {
     .forEach((section) => categoryObserver.observe(section));
 }
 
+const HEART_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 8.8c0 5-8.8 10-8.8 10s-8.8-5-8.8-10A4.8 4.8 0 0 1 12 6a4.8 4.8 0 0 1 8.8 2.8Z"></path></svg>';
+const PLUS_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5.5v13M5.5 12h13"></path></svg>';
+
 function renderProductCard(product) {
   const card = document.createElement("div");
   card.className = "product-card";
+  card.dataset.productId = product.id;
   const isFavorite = favoriteProductIds.has(product.id);
   const firstPhoto = window.MilaMedia.urls(product)[0];
   card.innerHTML = `
     <div class="product-image-wrap">
-      ${firstPhoto ? `<img class="product-image" src="${window.MilaMedia.escape(firstPhoto)}" alt="${window.MilaMedia.escape(product.name)}" loading="lazy" onerror="this.style.display='none'">` : '<div class="product-image-placeholder"></div>'}
-      <button class="favorite-btn ${isFavorite ? "is-favorite" : ""}" type="button" aria-label="${isFavorite ? "Quitar de favoritos" : "Agregar a favoritos"}">${isFavorite ? "♥" : "♡"}</button>
-      <button class="quick-add-btn" type="button" aria-label="Agregar ${product.name} al carrito">+</button>
+      ${firstPhoto ? `<img class="product-image" src="${window.MilaMedia.escape(firstPhoto)}" alt="${window.MilaMedia.escape(product.name)}" loading="lazy" decoding="async" onerror="this.style.display='none'">` : '<div class="product-image-placeholder"></div>'}
+      <span class="card-glare" aria-hidden="true"></span>
+      <button class="favorite-btn ${isFavorite ? "is-favorite" : ""}" type="button" aria-label="${isFavorite ? "Quitar de favoritos" : "Agregar a favoritos"}">${HEART_ICON}</button>
+      <button class="quick-add-btn" type="button" aria-label="Agregar ${product.name} al carrito">${PLUS_ICON}</button>
     </div>
     <span class="cat">${product.category || "Café"}</span>
     <h3>${product.name}</h3>
@@ -649,9 +669,11 @@ async function toggleFavorite(product, button) {
   if (wasFavorite) favoriteProductIds.delete(product.id);
   else favoriteProductIds.add(product.id);
   button.classList.toggle("is-favorite", !wasFavorite);
-  button.textContent = wasFavorite ? "♡" : "♥";
   button.setAttribute("aria-label", wasFavorite ? "Agregar a favoritos" : "Quitar de favoritos");
+  // The favorites section is rebuilt above; keep the tapped card where the customer left it.
+  const place = window.MilaMotion?.capturePlace?.(button);
   renderFavoritesSection();
+  place?.restore(!wasFavorite);
 }
 
 function renderFavoritesSection() {
@@ -719,6 +741,7 @@ function openProductModal(product) {
   openModal("#modal-product");
   window.MilaProductSheet.open(product, supabaseClient, (line) => {
     addProductToCart(product, line.qty, line);
+    window.MilaMotion?.cartAdded?.(product);
     closeModal("#modal-product");
     showToast(`${product.name} agregado al carrito`);
   }, () => closeModal("#modal-product"));
@@ -997,11 +1020,13 @@ async function refreshWalletUI() {
     .eq("id", currentUser.id)
     .single();
   if (!error && data) {
+    const previousBalance = Number(currentUser.wallet_balance || 0);
     currentUser.wallet_balance = data.wallet_balance;
     currentUser.is_admin = data.is_admin === true;
     currentUser.name = data.name || currentUser.name;
     currentUser.phone = data.phone || currentUser.phone;
     $("#wallet-balance").textContent = money(data.wallet_balance);
+    window.MilaMotion?.walletChanged?.($("#wallet-balance"), previousBalance, Number(data.wallet_balance || 0));
     saveSession();
     updateAdminLinks();
   }

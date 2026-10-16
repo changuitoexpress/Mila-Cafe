@@ -2,6 +2,7 @@
 
 ## Qué incluye
 - `index.html` / `styles.css` / `main.js` → la app que usan tus clientes (menú, carrito, monedero, confirmación de pedido)
+- `menu-experience.css` / `menu-motion.css` / `menu-motion.js` → diseño y animaciones del menú (sin librerías; si no cargan o el dispositivo pide menos movimiento, el menú, el carrito y el monedero funcionan igual)
 - `dashboard.html` → consulta los pedidos y confirma pickup y delivery con «Entregado y pagado»
 - El SQL original de Supabase no está incluido en este repositorio; no ejecutar instrucciones antiguas que lo mencionan como si existiera
 

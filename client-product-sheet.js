@@ -2,11 +2,38 @@ window.MilaProductSheet = (() => {
   let version = 0;
   const $sheet = (selector) => document.querySelector(selector);
   const escape = (value) => window.MilaMedia.escape(value);
+  const price = (value) => Number(value || 0).toFixed(2);
+  // The CTA bar keeps the same layout while loading so nothing jumps when options arrive.
+  const footerMarkup = (disabled) => `
+        <div class="sheet-quantity" aria-label="Cantidad">
+          <button id="sheet-minus" type="button" aria-label="Reducir cantidad" disabled>−</button>
+          <span id="sheet-qty" aria-live="polite">1</span>
+          <button id="sheet-plus" type="button" aria-label="Aumentar cantidad"${disabled ? " disabled" : ""}>+</button>
+        </div>
+        <button id="sheet-add" type="button" class="sheet-add"${disabled ? " disabled" : ""}></button>`;
+  // Photo and heading render immediately; only #sheet-options is filled once the options load.
+  function shell(product) {
+    return `${window.MilaMedia.carousel(product)}
+      <div class="sheet-heading"><p class="eyebrow">${escape(product.category || "Café")}</p>
+        <h2 id="sheet-product-title">${escape(product.name)}</h2><strong class="sheet-price">MXN ${price(product.price)}</strong>
+        ${product.description ? `<p class="sheet-description">${escape(product.description)}</p>` : ""}
+      </div>
+      <div id="sheet-options" class="sheet-options" aria-busy="true">
+        <div class="sheet-skeleton" aria-hidden="true"><span class="skeleton-line skeleton-title"></span>
+          <span class="skeleton-line"></span><span class="skeleton-line"></span><span class="skeleton-line"></span></div>
+        <p class="sheet-loading" role="status">Cargando complementos…</p>
+      </div>`;
+  }
   async function open(product, client, onAdd, onClose) {
     const token = ++version;
     const body = $sheet("#modal-product-body");
-    $sheet("#product-sheet-footer").classList.add("hidden");
-    body.innerHTML = '<p class="sheet-feedback" role="status">Cargando complementos…</p>';
+    const footer = $sheet("#product-sheet-footer");
+    body.innerHTML = shell(product);
+    body.scrollTop = 0;
+    window.MilaMedia.bindCarousel(body);
+    footer.innerHTML = footerMarkup(true);
+    footer.classList.remove("hidden");
+    $sheet("#sheet-add").textContent = `Agregar 1 al carrito · MXN ${price(product.price)}`;
     document.body.classList.add("product-sheet-open");
     const modal = $sheet("#modal-product");
     modal.onkeydown = (event) => {
@@ -25,26 +52,25 @@ window.MilaProductSheet = (() => {
       const groups = map.get(product.id) || [];
       product.optionGroups = groups;
       render(product, groups, onAdd);
-      $sheet("#modal-product-close").focus();
+      if (!modal.contains(document.activeElement)) $sheet("#modal-product-close").focus();
     } catch (error) {
       if (token !== version || modal.classList.contains("hidden")) return;
-      body.innerHTML = `<p class="sheet-feedback" role="alert">No se pudieron cargar los complementos: ${escape(error.message)}</p>
+      const options = $sheet("#sheet-options");
+      options.setAttribute("aria-busy", "false");
+      options.innerHTML = `<p class="sheet-feedback" role="alert">No se pudieron cargar los complementos: ${escape(error.message)}</p>
         <button id="sheet-retry" class="btn btn-secondary" type="button">Reintentar</button>`;
       $sheet("#sheet-retry").addEventListener("click", () => open(product, client, onAdd, onClose));
     }
   }
   function render(product, groups, onAdd) {
     const body = $sheet("#modal-product-body");
+    const options = $sheet("#sheet-options");
     let quantity = 1;
-    body.innerHTML = `${window.MilaMedia.carousel(product)}
-      <div class="sheet-heading"><p class="eyebrow">${escape(product.category || "Café")}</p>
-        <h2 id="sheet-product-title">${escape(product.name)}</h2><strong>MXN ${Number(product.price).toFixed(2)}</strong>
-        <p class="sheet-description">${escape(product.description || "")}</p>
-      </div>
+    options.innerHTML = `
       ${groups.map((group) => `<fieldset class="sheet-section option-group" data-group-id="${group.id}">
         <legend class="group-heading">${escape(group.nombre)}
           ${group.obligatorio ? '<span class="required-tag">Obligatorio</span>' : ""}</legend>
-        <p class="group-rule">${Number(group.max_opciones) === 1 ? "Elegir 1" : `Elegir hasta ${Number(group.max_opciones)}`}</p>
+        <p class="group-hint">${Number(group.max_opciones) === 1 ? "Elegir 1" : `Elegir hasta ${Number(group.max_opciones)}`}</p>
         ${!group.obligatorio && Number(group.max_opciones) === 1 ? `<label class="choice-row">
           <input type="radio" name="group-${group.id}" data-option-none checked value="" />
           <span class="choice-name">Sin complemento</span><span class="choice-price">MXN 0.00</span>
@@ -59,7 +85,7 @@ window.MilaProductSheet = (() => {
       <section class="sheet-section">
         <label class="group-heading" for="sheet-instructions">Instrucciones especiales</label>
         <textarea id="sheet-instructions" class="input" rows="3" placeholder="Escribe cómo prefieres este producto"></textarea>
-        <p class="group-rule">Solo para este pedido; no modifica el menú.</p>
+        <p class="group-hint">Solo para este pedido; no modifica el menú.</p>
       </section>
       <section class="sheet-section">
         <h3 class="group-heading">Solicitudes por alergia</h3>
@@ -70,16 +96,11 @@ window.MilaProductSheet = (() => {
         <p id="sheet-allergy-error" class="group-error" role="alert"></p>
       </section>
       <p id="sheet-feedback" class="sheet-feedback" role="alert"></p>`;
+    options.setAttribute("aria-busy", "false");
+    options.classList.add("is-ready");
     const footer = $sheet("#product-sheet-footer");
     footer.classList.remove("hidden");
-    footer.innerHTML = `
-        <div class="sheet-quantity" aria-label="Cantidad">
-          <button id="sheet-minus" type="button" aria-label="Reducir cantidad">−</button>
-          <span id="sheet-qty" aria-live="polite">1</span>
-          <button id="sheet-plus" type="button" aria-label="Aumentar cantidad">+</button>
-        </div>
-        <button id="sheet-add" type="button" class="sheet-add"></button>`;
-    window.MilaMedia.bindCarousel(body);
+    footer.innerHTML = footerMarkup(false);
     const selection = () => window.MilaOptions.snapshot(groups, new Set([...body.querySelectorAll("[data-option-id]:checked")].map((input) => input.value)));
     function update() {
       const chosen = selection();
@@ -107,8 +128,16 @@ window.MilaProductSheet = (() => {
       if (other && input.value === "Otra") $sheet("#sheet-allergy-extra").focus();
       if (!other) $sheet("#sheet-allergy-error").textContent = "";
     }));
-    $sheet("#sheet-minus").addEventListener("click", () => { quantity = Math.max(1, quantity - 1); update(); });
-    $sheet("#sheet-plus").addEventListener("click", () => { quantity++; update(); });
+    $sheet("#sheet-minus").addEventListener("click", () => {
+      quantity = Math.max(1, quantity - 1);
+      update();
+      window.MilaMotion?.pulse?.($sheet("#sheet-qty"));
+    });
+    $sheet("#sheet-plus").addEventListener("click", () => {
+      quantity++;
+      update();
+      window.MilaMotion?.pulse?.($sheet("#sheet-qty"));
+    });
     $sheet("#sheet-add").addEventListener("click", () => {
       const chosen = selection();
       const errors = window.MilaOptions.validate(groups, chosen);

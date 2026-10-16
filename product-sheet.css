@@ -170,11 +170,16 @@ body.product-sheet-open {
   border-bottom: 0;
 }
 
+/* Keeps the .sheet-section margins, padding and divider; only resets fieldset defaults. */
 #modal-product.product-sheet fieldset.option-group {
   min-width: 0;
-  margin: 0;
+  border-top: 0;
+  border-right: 0;
+  border-left: 0;
+}
+
+#modal-product.product-sheet fieldset.option-group legend {
   padding: 0;
-  border: 0;
 }
 
 #modal-product.product-sheet .group-heading {
@@ -186,11 +191,10 @@ body.product-sheet-open {
   font: 600 17px/1.25 'Fraunces', Georgia, serif;
 }
 
-#modal-product.product-sheet .group-rule {
-  flex: 1;
-  height: 1px;
-  min-width: 18px;
-  background: rgba(74, 51, 36, .17);
+#modal-product.product-sheet .group-hint {
+  margin: 2px 0 4px;
+  color: var(--espresso-soft, #4A3324);
+  font: 400 12px/1.45 'Work Sans', sans-serif;
 }
 
 #modal-product.product-sheet .required-tag {
@@ -310,8 +314,8 @@ body.product-sheet-open {
 }
 
 #modal-product.product-sheet .allergy-extra::placeholder {
-  color: #816f60;
-  opacity: 1;
+  color: var(--espresso-soft, #4A3324);
+  opacity: .72;
 }
 
 #modal-product.product-sheet .sheet-bottom {
@@ -378,9 +382,9 @@ body.product-sheet-open {
   width: 100%;
   min-height: 52px;
   padding: 0 19px;
-  border: 1px solid #21150f;
+  border: 1px solid var(--espresso, #2B1B12);
   border-radius: 13px;
-  background: #21150f;
+  background: var(--espresso, #2B1B12);
   color: var(--cream, #F6EFE2);
   font: 600 14px/1.25 'Work Sans', sans-serif;
   cursor: pointer;
@@ -432,8 +436,8 @@ body.product-sheet-open {
   padding: 8px 10px;
   border-left: 3px solid var(--danger, #B4483E);
   border-radius: 0 8px 8px 0;
-  background: #f7e7e3;
-  color: #842f29;
+  background: rgba(180, 72, 62, .1);
+  color: var(--danger, #B4483E);
   font: 600 11px/1.45 'Work Sans', sans-serif;
   overflow-wrap: anywhere;
 }
@@ -450,7 +454,7 @@ body.product-sheet-open {
     height: min(92dvh, 920px);
     border: 1px solid rgba(246, 239, 226, .5);
     border-radius: 22px;
-    box-shadow: 0 24px 80px rgba(30, 18, 11, .3);
+    box-shadow: 0 24px 80px rgba(43, 27, 18, .3);
   }
 
   #modal-product.product-sheet .gallery-track {

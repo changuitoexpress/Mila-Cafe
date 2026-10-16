@@ -113,6 +113,7 @@ function environment(admin = false) {
     w.AdminOptions.init();
   } else {
     w.eval(read("client-product-sheet.js"));
+    w.eval(read("menu-motion.js"));
     w.eval(read("main.js"));
     w.eval('currentUser = {id:"customer",name:"Prueba",phone:"0000000000",wallet_balance:0}; cart = [];');
   }
@@ -371,5 +372,152 @@ test("compression reduces quality until the JPEG is strictly below 1 MB and free
   assert.equal(blob.size,800000);
   assert.deepEqual(qualities,[0.82,0.65]);
   assert.deepEqual(revoked,["blob:test-photo"]);
+  h.dom.window.close();
+});
+
+// ---------- Motion layer: it must never change what the customer can do ----------
+const pointer = (h, type, target, { x = 0, y = 0, id = 1, kind = "touch" } = {}) => {
+  const Ctor = h.w.PointerEvent || h.w.MouseEvent;
+  const event = new Ctor(type, { bubbles: true, cancelable: true, clientX: x, clientY: y, pointerId: id, pointerType: kind, isPrimary: true });
+  [["pointerId", id], ["pointerType", kind], ["isPrimary", true]].forEach(([key, value]) => {
+    if (event[key] !== value) Object.defineProperty(event, key, { value });
+  });
+  target.dispatchEvent(event);
+};
+const menuEnvironment = () => {
+  const h = environment();
+  h.w.eval(`products = ${JSON.stringify([
+    { ...product(), id: "a" },
+    { ...product(), id: "b", name: "Chai", category: "Té", price: 45 },
+  ])}; renderMenu();`);
+  return h;
+};
+
+test("a held touch tilts the photo toward the finger, springs back on release and never fights scrolling", () => {
+  const h = menuEnvironment();
+  const timers = [];
+  h.w.setTimeout = (fn) => { timers.push(fn); return timers.length; };
+  const card = h.$("#products-grid .product-card");
+  card.querySelector(".product-image-wrap").getBoundingClientRect = () => ({ left: 0, top: 0, width: 200, height: 200 });
+  const photo = card.querySelector(".product-image, .product-image-placeholder");
+  pointer(h, "pointerdown", photo, { x: 150, y: 50 });
+  assert.equal(card.classList.contains("is-tilting"), false, "a quick tap or a scroll start does not tilt");
+  timers.splice(0).forEach((fn) => fn());
+  assert.ok(card.classList.contains("is-tilting") && card.classList.contains("is-pressed"));
+  assert.equal(card.style.getPropertyValue("--tilt-x"), "0.250");
+  assert.equal(card.style.getPropertyValue("--tilt-y"), "-0.250");
+  pointer(h, "pointerup", photo, { x: 150, y: 50 });
+  assert.equal(card.classList.contains("is-tilting"), false);
+  assert.equal(card.style.getPropertyValue("--tilt-x"), "0");
+  pointer(h, "pointerdown", photo, { x: 100, y: 100 });
+  pointer(h, "pointermove", photo, { x: 100, y: 130 });
+  timers.splice(0).forEach((fn) => fn());
+  assert.equal(card.classList.contains("is-tilting"), false, "a finger that moves is scrolling");
+  pointer(h, "pointerdown", card.querySelector(".favorite-btn"), { x: 20, y: 20 });
+  assert.equal(timers.length, 0, "buttons keep their own press feedback");
+  h.dom.window.close();
+});
+
+test("the cursor tilts the card under it and lets go when it leaves", () => {
+  const h = menuEnvironment();
+  const card = h.$("#products-grid .product-card");
+  card.querySelector(".product-image-wrap").getBoundingClientRect = () => ({ left: 0, top: 0, width: 100, height: 100 });
+  pointer(h, "pointermove", card.querySelector("h3"), { x: 0, y: 100, kind: "mouse" });
+  assert.ok(card.classList.contains("is-tilting"));
+  assert.equal(card.classList.contains("is-pressed"), false);
+  assert.equal(card.style.getPropertyValue("--tilt-x"), "-0.500");
+  assert.equal(card.style.getPropertyValue("--tilt-y"), "0.500");
+  pointer(h, "pointermove", h.$("#products-grid"), { x: 400, y: 400, kind: "mouse" });
+  assert.equal(card.classList.contains("is-tilting"), false);
+  assert.equal(card.style.getPropertyValue("--tilt-y"), "0");
+  h.dom.window.close();
+});
+
+test("category indicator follows the tapped chip, holds it during the glide and survives re-renders", () => {
+  const h = menuEnvironment();
+  const bar = h.$("#category-chips");
+  const indicator = bar.firstElementChild;
+  assert.ok(indicator.classList.contains("chip-indicator"));
+  const chip = [...bar.querySelectorAll(".category-chip")].find((item) => item.textContent === "Té");
+  Object.defineProperties(chip, { offsetLeft: { value: 120 }, offsetWidth: { value: 64 } });
+  chip.click();
+  assert.ok(chip.classList.contains("active"));
+  assert.equal(indicator.style.width, "64px");
+  assert.equal(indicator.style.transform, "translateX(120px)");
+  assert.equal(h.w.MilaMotion.categoryLocked(), true);
+  assert.equal(h.$(`#${chip.dataset.section}`).scrolledIntoView, true);
+  h.w.eval("renderMenu()");
+  assert.equal(bar.querySelector(".category-chip.active").dataset.section, chip.dataset.section);
+  assert.equal(bar.querySelectorAll(".chip-indicator").length, 1);
+  h.dom.window.close();
+});
+
+test("wallet counts to the new balance, shows the difference and waits until Mi cuenta is open", async () => {
+  const h = environment();
+  h.fixture.profiles.push({ id: "customer", name: "Prueba", phone: "0000000000", wallet_balance: 35.5, is_admin: false });
+  await h.w.eval("refreshWalletUI()");
+  assert.equal(h.$("#wallet-balance").textContent, "35.50");
+  assert.equal(h.$(".wallet-delta"), null, "nothing plays while Mi cuenta is closed");
+  h.$('.tab[data-tab="cuenta"]').click();
+  await h.flush();
+  assert.equal(h.$("#wallet-balance").textContent, "35.50");
+  assert.equal(h.$(".wallet-delta").textContent, "+$35.50");
+  h.w.MilaMotion.walletChanged(h.$("#wallet-balance"), 35.5, 30.5);
+  assert.equal(h.$("#wallet-balance").textContent, "30.50");
+  assert.equal(h.$(".wallet-delta").textContent, "−$5.00");
+  assert.ok(h.$(".wallet-delta").classList.contains("is-negative"));
+  assert.deepEqual(h.errors, []);
+  h.dom.window.close();
+});
+
+test("adding to cart flies the product into the visible cart and bumps it without touching the cart", async () => {
+  const h = environment();
+  const animations = [];
+  h.w.Element.prototype.animate = function(keyframes, options) {
+    const animation = { element: this, keyframes, options, onfinish: null, oncancel: null, cancel() {} };
+    animations.push(animation);
+    return animation;
+  };
+  // jsdom has no layout: describe the boxes the flight connects.
+  const floating = h.$("#floating-cart");
+  floating.getClientRects = () => [{}];
+  Object.defineProperties(floating, { offsetLeft: { value: 300 }, offsetTop: { value: 800 }, clientLeft: { value: 1 }, clientTop: { value: 1 } });
+  Object.defineProperties(floating.querySelector(".floating-cart-icon"), {
+    offsetLeft: { value: 18 }, offsetTop: { value: 17 }, offsetWidth: { value: 21 }, offsetHeight: { value: 21 },
+  });
+  h.w.eval(`openProductModal(${JSON.stringify(product())})`);
+  await h.flush();
+  h.$('[data-option-id="oat"]').click();
+  const add = h.$("#sheet-add");
+  add.getClientRects = () => [{}];
+  add.getBoundingClientRect = () => ({ left: 20, top: 780, width: 300, height: 54 });
+  add.click();
+  assert.equal(h.w.eval("cart.length"), 1);
+  assert.equal(h.$("#floating-cart-count").textContent, "1");
+  const flyer = h.$(".cart-flyer");
+  assert.ok(flyer, "the product flies toward the cart");
+  assert.equal(flyer.style.left, "170px");
+  assert.equal(flyer.style.top, "807px");
+  const across = animations.find((animation) => animation.element === flyer);
+  const flight = animations.find((animation) => animation.element === flyer.firstElementChild);
+  assert.equal(across.keyframes.at(-1).translate, "159.5px 0");
+  assert.equal(flight.keyframes.at(-1).translate, "0 21.5px");
+  flight.onfinish();
+  assert.equal(h.$(".cart-flyer"), null);
+  assert.ok(animations.some((animation) => animation.element === floating && animation.keyframes.some((frame) => frame.scale === 1.1)));
+  assert.equal(h.$("#modal-product").classList.contains("hidden"), true);
+  h.dom.window.close();
+});
+
+test("a balance change found while Mi cuenta was closed still plays if the tab's own refresh lands first", () => {
+  const h = environment();
+  const balance = h.$("#wallet-balance");
+  h.w.MilaMotion.walletChanged(balance, 0, 10);
+  assert.equal(h.$(".wallet-delta"), null);
+  h.$("#view-menu").classList.remove("active");
+  h.$("#view-cuenta").classList.add("active");
+  h.w.MilaMotion.walletChanged(balance, 10, 10);
+  assert.equal(h.$(".wallet-delta").textContent, "+$10.00");
+  assert.equal(balance.textContent, "10.00");
   h.dom.window.close();
 });
