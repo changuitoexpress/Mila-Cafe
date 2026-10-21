@@ -19,8 +19,8 @@
 
 /* No sideways jump when the product sheet locks page scrolling on desktop. The reserved
    scrollbar strip sits outside the fixed backdrop, so it takes the backdrop's tint instead. */
-html { scrollbar-gutter: stable; background-color: var(--cream); }
-html:has(body.product-sheet-open) { background-color: color-mix(in srgb, var(--espresso) 56%, var(--cream)); }
+html { scrollbar-gutter: stable; background-color: var(--bg); }
+html:has(body.product-sheet-open) { background-color: color-mix(in srgb, var(--scrim-base) 56%, var(--bg)); }
 @media (prefers-reduced-motion: no-preference) {
   html.has-motion { transition: background-color .32s var(--motion-settle); }
 }
@@ -35,7 +35,7 @@ html:has(body.product-sheet-open) { background-color: color-mix(in srgb, var(--e
   inset: 0;
   z-index: 1;
   border-radius: inherit;
-  background: radial-gradient(circle at calc((var(--tilt-x, 0) + .5) * 100%) calc((var(--tilt-y, 0) + .5) * 100%), rgba(255, 255, 255, .3), rgba(255, 255, 255, 0) 60%);
+  background: radial-gradient(circle at calc((var(--tilt-x, 0) + .5) * 100%) calc((var(--tilt-y, 0) + .5) * 100%), var(--glare), transparent 60%);
   opacity: 0;
   pointer-events: none;
 }
@@ -50,19 +50,19 @@ html:has(body.product-sheet-open) { background-color: color-mix(in srgb, var(--e
   z-index: 2;
   padding: 7px 11px;
   border-radius: 999px;
-  background: var(--sage);
-  color: var(--cream);
+  background: var(--surface-raised);
+  color: var(--success);
   font: 600 12px/1 'JetBrains Mono', monospace;
   font-variant-numeric: tabular-nums;
   opacity: 0;
   pointer-events: none;
 }
-.has-motion #app .wallet-delta.is-negative { background: var(--rose); color: var(--espresso); }
+.has-motion #app .wallet-delta.is-negative { background: var(--surface-raised); color: var(--danger); }
 .has-motion #app .wallet-sheen {
   position: absolute;
   inset: 0;
   z-index: 1;
-  background: linear-gradient(105deg, rgba(246, 239, 226, 0) 32%, rgba(246, 239, 226, .16) 50%, rgba(246, 239, 226, 0) 68%);
+  background: linear-gradient(105deg, transparent 32%, color-mix(in srgb, var(--wallet-fg) 16%, transparent) 50%, transparent 68%);
   opacity: 0;
   pointer-events: none;
 }
@@ -75,10 +75,10 @@ html:has(body.product-sheet-open) { background-color: color-mix(in srgb, var(--e
   width: 52px;
   height: 52px;
   overflow: hidden;
-  border: 2px solid var(--cream);
+  border: 2px solid var(--on-primary);
   border-radius: 50%;
-  background: var(--copper);
-  box-shadow: 0 12px 26px rgba(43, 27, 18, .3);
+  background: var(--primary);
+  box-shadow: var(--shadow-float);
 }
 .cart-flyer-dot img { display: block; width: 100%; height: 100%; object-fit: cover; }
 
@@ -90,7 +90,7 @@ html:has(body.product-sheet-open) { background-color: color-mix(in srgb, var(--e
   height: 56px;
   overflow: hidden;
   border-radius: 10px;
-  background: var(--cream-2);
+  background: var(--placeholder);
 }
 #modal-product.product-sheet .skeleton-title { width: 44%; height: 22px; margin-bottom: 4px; border-radius: 6px; }
 #modal-product.product-sheet .sheet-loading {
@@ -113,13 +113,13 @@ html:has(body.product-sheet-open) { background-color: color-mix(in srgb, var(--e
   /* The 3D transform only exists while a card is touched or hovered, so idle cards cost nothing. */
   .has-motion #app .product-card.is-tilting .product-image-wrap {
     transform: perspective(800px) rotateX(calc(var(--tilt-y, 0) * -14deg)) rotateY(calc(var(--tilt-x, 0) * 14deg)) scale(var(--tilt-scale, 1.025));
-    box-shadow: calc(var(--tilt-x, 0) * 14px) calc(14px + var(--tilt-y, 0) * 8px) 28px -14px rgba(43, 27, 18, .42);
+    box-shadow: calc(var(--tilt-x, 0) * 14px) calc(14px + var(--tilt-y, 0) * 8px) 28px -14px var(--shadow-tilt);
     transition-duration: .18s, .3s;
     transition-timing-function: ease-out, ease-out;
   }
   .has-motion #app .product-card.is-pressed .product-image-wrap {
     --tilt-scale: .97;
-    box-shadow: calc(var(--tilt-x, 0) * 6px) calc(6px + var(--tilt-y, 0) * 4px) 14px -8px rgba(43, 27, 18, .32);
+    box-shadow: calc(var(--tilt-x, 0) * 6px) calc(6px + var(--tilt-y, 0) * 4px) 14px -8px var(--shadow-tilt-press);
   }
   .has-motion #app :is(.product-image, .product-image-placeholder) { transition: transform .7s var(--motion-spring-soft); }
   .has-motion #app .product-card.is-tilting :is(.product-image, .product-image-placeholder) {
@@ -157,7 +157,7 @@ html:has(body.product-sheet-open) { background-color: color-mix(in srgb, var(--e
     content: "";
     position: absolute;
     inset: -1px;
-    border: 2px solid rgba(180, 72, 62, .4);
+    border: 2px solid color-mix(in srgb, var(--danger) 40%, transparent);
     border-radius: 50%;
     opacity: 0;
     pointer-events: none;
@@ -222,7 +222,7 @@ html:has(body.product-sheet-open) { background-color: color-mix(in srgb, var(--e
     content: "";
     position: absolute;
     inset: 0;
-    background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, .55), rgba(255, 255, 255, 0));
+    background: linear-gradient(90deg, transparent, var(--shimmer), transparent);
     translate: -100% 0;
     animation: mila-shimmer 1.3s ease-in-out infinite;
   }

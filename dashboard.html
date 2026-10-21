@@ -4,17 +4,25 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Mila Café — Panel de administración</title>
-  <link rel="icon" type="image/svg+xml" href="icons/mila-icon.svg" />
+  <meta name="theme-color" content="#274034" />
+  <script src="theme.js"></script>
+  <link rel="icon" type="image/png" sizes="64x64" href="icons/favicon.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,0..144,500&family=Work+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="theme.css" />
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="product-sheet.css" />
 </head>
 <body class="dashboard-page">
   <header class="dashboard-topbar">
-    <a class="dashboard-brand" href="index.html">Mila<span>Café</span></a>
+    <a class="dashboard-brand" href="index.html"><img class="brand-logo" src="brand/logo-crema.png" width="73" height="42" alt="Mila Café" /></a>
     <div class="dashboard-topbar-actions">
+      <button class="theme-toggle" data-theme-toggle type="button" aria-label="Cambiar a modo noche" title="Cambiar a modo noche">
+        <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.2A8.2 8.2 0 0 1 9.8 4a8.2 8.2 0 1 0 10.2 10.2Z"></path></svg>
+        <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2"></circle><path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M5.5 18.5l1.7-1.7M16.8 7.2l1.7-1.7"></path></svg>
+      </button>
       <span id="admin-name" class="admin-name"></span>
       <button id="change-pin-open" class="dashboard-logout" type="button">Cambiar mi PIN</button>
       <button id="dashboard-logout" class="dashboard-logout" type="button">Cerrar sesión</button>

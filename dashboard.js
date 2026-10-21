@@ -118,7 +118,7 @@ function announceNewOrder(order) {
       const notification = new Notification("Nuevo pedido — Mila Café", {
         body: `Pedido #${id.slice(0, 8)}. Abre el panel para revisarlo.`,
         tag: `mila-order-${id}`,
-        icon: "icons/mila-icon-192.png",
+        icon: "icons/icon-192.png",
       });
       notification.onclick = () => {
         window.focus();

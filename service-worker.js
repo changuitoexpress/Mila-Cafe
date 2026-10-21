@@ -1,8 +1,10 @@
 // Solo archivos locales de la interfaz. Nunca interceptar datos de Supabase ni CDN externos.
-const STATIC_CACHE = "mila-static-v4";
+const STATIC_CACHE = "mila-static-v5";
 const STATIC_FILES = [
   "./",
   "./index.html",
+  "./theme.css",
+  "./theme.js",
   "./styles.css",
   "./main.js",
   "./product-media.js",
@@ -14,9 +16,13 @@ const STATIC_FILES = [
   "./menu-motion.js",
   "./pwa.js",
   "./manifest.webmanifest",
-  "./icons/mila-icon.svg",
-  "./icons/mila-icon-192.png",
-  "./icons/mila-icon-512.png",
+  "./brand/logo-verde.png",
+  "./brand/logo-crema.png",
+  "./icons/icon-192.png",
+  "./icons/icon-512.png",
+  "./icons/icon-maskable-512.png",
+  "./icons/apple-touch-icon.png",
+  "./icons/favicon.png",
 ];
 const STATIC_URLS = new Set(STATIC_FILES.map((path) => new URL(path, self.registration.scope).pathname));
 

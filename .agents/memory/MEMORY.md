@@ -3,5 +3,6 @@
 - [Cashback del negocio](cashback-policy.md) — el cashback es 5% para todos los productos, no depende de la categoría.
 - [Supabase public schema](supabase-public-schema.md) — publishable keys can read tables but cannot access REST OpenAPI; inspect empty tables with narrow SELECT probes.
 - [Pedidos personalizados](custom-orders.md) — solo asignaciones, grupos y opciones activos; un pedido puede repetir producto con distintas configuraciones.
-- [Menu motion and visual rules](menu-motion.md) — palette-only colors, no animation libraries, gated motion, no idle 3D layers, wallet refresh pitfall.
+- [Menu motion and visual rules](menu-motion.md) — no animation libraries, gated motion, no idle 3D layers, wallet refresh pitfall.
 - [Screenshot verification quirks](preview-screenshots.md) — signed-in UI needs a gitignored harness; cache-bust assets; clear leftover fake sessions.
+- [Brand identity and themes](brand-theme.md) — colors only in theme.css, themes mila/noche, key mila-tema, contrast rules, logos and PWA files.

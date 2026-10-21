@@ -1,0 +1,229 @@
+/* ==========================================================
+   MILA CAFÉ — IDENTIDAD VISUAL Y TEMAS
+   Única fuente de color de la app. Ninguna otra hoja, estilo en línea ni script
+   debe escribir un color fijo: todo se pide con una variable del tema.
+
+   data-theme="mila"   claro, el del cliente, por defecto
+   data-theme="noche"  oscuro, elegido con el botón del encabezado (clave mila-tema)
+
+   Verde #274034 · Crema #F3EFE4 · Gris Pantone 324 U #B5B1A7
+   ========================================================== */
+
+:root,
+:root[data-theme="mila"] {
+  color-scheme: light;
+
+  /* Paleta de marca */
+  --brand-green: #274034;
+  --brand-cream: #F3EFE4;
+  --brand-stone: #B5B1A7;
+
+  /* Superficies */
+  --bg: #D8D5CC;
+  --surface: #E9E6DD;
+  --surface-raised: var(--brand-cream);
+  --chip: var(--brand-stone);
+  --placeholder: color-mix(in srgb, var(--brand-stone) 55%, var(--surface));
+  --selected-bg: color-mix(in srgb, var(--accent) 10%, var(--surface-raised));
+
+  /* Líneas: --border divide; --border-strong delimita controles (contraste ≥ 3:1) */
+  --border: var(--brand-stone);
+  --border-strong: color-mix(in srgb, var(--brand-green) 50%, var(--brand-stone));
+
+  /* Texto y acento */
+  --text: #274034;
+  --text-2: #4A5C51;
+  --accent: #274034;
+  --focus: #274034;
+
+  /* Botón primario */
+  --primary: #274034;
+  --on-primary: var(--brand-cream);
+  --primary-hover: color-mix(in srgb, var(--primary) 86%, var(--on-primary));
+
+  /* Encabezado */
+  --header-bg: #274034;
+  --header-fg: var(--brand-cream);
+  --header-fg-2: color-mix(in srgb, var(--header-fg) 80%, var(--header-bg));
+  --header-hover: color-mix(in srgb, var(--header-fg) 14%, transparent);
+  --header-line: color-mix(in srgb, var(--header-fg) 18%, transparent);
+  --meta-theme-color: #274034;
+
+  /* Avisos y estados */
+  --danger: #9E352C;
+  --danger-bg: color-mix(in srgb, var(--danger) 12%, var(--surface-raised));
+  --success: #2B6139;
+  --success-bg: color-mix(in srgb, var(--success) 14%, var(--surface-raised));
+  --warning: #7A4F12;
+  --warning-bg: color-mix(in srgb, var(--warning) 14%, var(--surface-raised));
+  --on-solid: var(--brand-cream);
+  --whatsapp: #25D366;
+  --on-whatsapp: #274034;
+
+  /* Monedero y avisos flotantes */
+  --wallet-bg: #274034;
+  --wallet-fg: var(--brand-cream);
+  --toast-bg: #274034;
+  --toast-fg: var(--brand-cream);
+
+  /* Fotos (tienen fondo de mármol blanco: nunca se invierten) */
+  --photo-border: transparent;
+  --glare: color-mix(in srgb, var(--brand-cream) 34%, transparent);
+  --float-bg: color-mix(in srgb, var(--surface-raised) 94%, transparent);
+
+  /* Esqueletos de carga */
+  --shimmer: color-mix(in srgb, var(--brand-cream) 60%, transparent);
+
+  /* Sombras y velos */
+  --shadow-ink: #274034;
+  --scrim-base: #274034;
+  --shadow-sm: 0 2px 8px color-mix(in srgb, var(--shadow-ink) 14%, transparent);
+  --shadow: 0 12px 28px color-mix(in srgb, var(--shadow-ink) 14%, transparent);
+  --shadow-lg: 0 20px 64px color-mix(in srgb, var(--shadow-ink) 26%, transparent);
+  --shadow-float: 0 8px 24px color-mix(in srgb, var(--shadow-ink) 28%, transparent);
+  --shadow-up: 0 -8px 22px color-mix(in srgb, var(--shadow-ink) 10%, transparent);
+  --shadow-tilt: color-mix(in srgb, var(--shadow-ink) 42%, transparent);
+  --shadow-tilt-press: color-mix(in srgb, var(--shadow-ink) 32%, transparent);
+  --scrim: color-mix(in srgb, var(--scrim-base) 46%, transparent);
+  --scrim-strong: color-mix(in srgb, var(--scrim-base) 58%, transparent);
+
+  --radius: 18px;
+  --radius-sm: 10px;
+}
+
+:root[data-theme="noche"] {
+  color-scheme: dark;
+
+  --bg: #121B16;
+  --surface: #1B2822;
+  --surface-raised: #24342C;
+  --chip: #24342C;
+  --placeholder: #24342C;
+  --selected-bg: color-mix(in srgb, var(--accent) 14%, var(--surface-raised));
+
+  --border: #2F4238;
+  --border-strong: #75907F;
+
+  --text: #EDE9DD;
+  --text-2: #A7B2AA;
+  --accent: #9FB8A8;
+  --focus: #9FB8A8;
+
+  --primary: var(--brand-cream);
+  --on-primary: #274034;
+
+  --header-bg: #0D1410;
+  --header-fg: var(--brand-cream);
+  --meta-theme-color: #0D1410;
+
+  --danger: #F0948A;
+  --success: #8FCB9F;
+  --warning: #E0B26B;
+  --danger-bg: color-mix(in srgb, var(--danger) 16%, var(--surface));
+  --success-bg: color-mix(in srgb, var(--success) 15%, var(--surface));
+  --warning-bg: color-mix(in srgb, var(--warning) 15%, var(--surface));
+  --on-solid: #121B16;
+
+  --wallet-bg: #24342C;
+  --toast-bg: #24342C;
+  --toast-fg: #EDE9DD;
+
+  --photo-border: color-mix(in srgb, var(--accent) 28%, var(--border));
+  --float-bg: color-mix(in srgb, var(--surface-raised) 92%, transparent);
+
+  --shimmer: color-mix(in srgb, var(--text) 9%, transparent);
+
+  --shadow-ink: #000000;
+  --scrim-base: #000000;
+  --shadow-sm: 0 2px 8px color-mix(in srgb, var(--shadow-ink) 45%, transparent);
+  --shadow: 0 12px 28px color-mix(in srgb, var(--shadow-ink) 42%, transparent);
+  --shadow-lg: 0 20px 64px color-mix(in srgb, var(--shadow-ink) 60%, transparent);
+  --shadow-float: 0 8px 24px color-mix(in srgb, var(--shadow-ink) 55%, transparent);
+  --shadow-up: 0 -8px 22px color-mix(in srgb, var(--shadow-ink) 38%, transparent);
+  --shadow-tilt: color-mix(in srgb, var(--shadow-ink) 62%, transparent);
+  --shadow-tilt-press: color-mix(in srgb, var(--shadow-ink) 50%, transparent);
+  --scrim: color-mix(in srgb, var(--scrim-base) 58%, transparent);
+  --scrim-strong: color-mix(in srgb, var(--scrim-base) 70%, transparent);
+}
+
+/* ---------- Base compartida ---------- */
+html {
+  background-color: var(--bg);
+  accent-color: var(--accent);
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+
+/* El encabezado es oscuro en ambos temas: su anillo de foco es el color de sus letras. */
+.topbar,
+.dashboard-topbar {
+  --focus: var(--header-fg);
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent) 32%, transparent);
+  color: inherit;
+}
+
+::placeholder {
+  color: var(--text-2);
+  opacity: 1;
+}
+
+/* ---------- Botón de tema (encabezado del cliente y del panel) ---------- */
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--header-fg);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.theme-toggle:hover { background: var(--header-hover); }
+.theme-toggle svg {
+  width: 21px;
+  height: 21px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+/* La luna ofrece el modo noche; el sol ofrece volver al claro. */
+.theme-toggle .icon-sun { display: none; }
+:root[data-theme="noche"] .theme-toggle .icon-sun { display: block; }
+:root[data-theme="noche"] .theme-toggle .icon-moon { display: none; }
+
+/* ---------- Logo de marca ---------- */
+.brand-logo { display: block; height: auto; max-width: 100%; }
+.brand-logo-on-dark { display: none; }
+:root[data-theme="noche"] .brand-logo-on-light { display: none; }
+:root[data-theme="noche"] .brand-logo-on-dark { display: block; }
+
+/* ---------- Cambio de tema: solo color, 200 ms como máximo ---------- */
+@media (prefers-reduced-motion: no-preference) {
+  html.theme-switching,
+  html.theme-switching *,
+  html.theme-switching *::before,
+  html.theme-switching *::after {
+    transition: background-color .2s ease, color .2s ease, border-color .2s ease, fill .2s ease, stroke .2s ease, box-shadow .2s ease !important;
+  }
+}
+
+/* ---------- Fotos: esquinas redondeadas ya definidas en cada componente; en noche llevan un borde sutil ---------- */
+#app .product-image-wrap,
+.admin-product-thumb,
+.admin-gallery-photo img,
+.photo-preview {
+  border: 1px solid var(--photo-border);
+}
