@@ -44,6 +44,7 @@ let favoriteProductIds = new Set();
 let categoryObserver = null;
 let menuSearch = "";
 let checkoutBusy = false;
+let carouselResizeListenerAttached = false;
 
 // ============================================================
 // UTILIDADES
@@ -300,10 +301,84 @@ function getMenuSections() {
   return sections;
 }
 
+function carouselArrow(direction, title) {
+  const previous = direction === "previous";
+  const button = document.createElement("button");
+  button.className = "carousel-arrow";
+  button.type = "button";
+  button.setAttribute("aria-label", `Desplazar ${title} ${previous ? "a la izquierda" : "a la derecha"}`);
+  button.innerHTML = previous
+    ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 5-7 7 7 7M7 12h13"></path></svg>'
+    : '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m10 5 7 7-7 7m7-7H4"></path></svg>';
+  return button;
+}
+
+function updateCarouselControls(track) {
+  const section = track?.closest(".product-carousel");
+  const controls = section?.querySelector(".carousel-controls");
+  if (!track || !section || !controls) return;
+
+  const overflowing = track.scrollWidth > track.clientWidth + 1;
+  section.classList.toggle("has-overflow", overflowing);
+  track.tabIndex = overflowing ? 0 : -1;
+  controls.hidden = !overflowing;
+
+  const previous = controls.querySelector('[data-carousel-direction="previous"]');
+  const next = controls.querySelector('[data-carousel-direction="next"]');
+  if (previous) previous.disabled = !overflowing || track.scrollLeft <= 1;
+  if (next) next.disabled = !overflowing || track.scrollLeft + track.clientWidth >= track.scrollWidth - 1;
+}
+
+function refreshCarouselControls() {
+  $$(".category-carousel-track").forEach(updateCarouselControls);
+}
+
+function scrollCarousel(track, direction) {
+  const cardWidth = track.querySelector(".product-card")?.getBoundingClientRect().width || 156;
+  const computed = window.getComputedStyle?.(track);
+  const gap = Number.parseFloat(computed?.columnGap || computed?.gap) || 14;
+  const maximum = Math.max(0, track.scrollWidth - track.clientWidth);
+  const nextLeft = direction === "start"
+    ? 0
+    : direction === "end"
+      ? maximum
+      : Math.max(0, Math.min(maximum, track.scrollLeft + direction * (cardWidth + gap)));
+  const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+  track.scrollTo({ left: nextLeft, behavior: reduceMotion ? "auto" : "smooth" });
+}
+
+function bindCarousel(track, controls) {
+  const previous = controls.querySelector('[data-carousel-direction="previous"]');
+  const next = controls.querySelector('[data-carousel-direction="next"]');
+  previous.addEventListener("click", () => scrollCarousel(track, -1));
+  next.addEventListener("click", () => scrollCarousel(track, 1));
+  track.addEventListener("scroll", () => updateCarouselControls(track), { passive: true });
+  track.addEventListener("keydown", (event) => {
+    if (event.altKey || event.ctrlKey || event.metaKey) return;
+    if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+      event.preventDefault();
+      scrollCarousel(track, event.key === "ArrowLeft" ? -1 : 1);
+    } else if (event.key === "Home" || event.key === "End") {
+      event.preventDefault();
+      scrollCarousel(track, event.key === "Home" ? "start" : "end");
+    }
+  });
+}
+
 function renderMenu() {
   const grid = $("#products-grid");
   const sections = getMenuSections();
+  const carouselScrollPositions = new Map(
+    [...grid.querySelectorAll(".category-carousel-track")].map((track) => [
+      track.closest(".product-carousel")?.id,
+      track.scrollLeft,
+    ])
+  );
   grid.innerHTML = "";
+  if (!carouselResizeListenerAttached && typeof window.addEventListener === "function") {
+    window.addEventListener("resize", refreshCarouselControls, { passive: true });
+    carouselResizeListenerAttached = true;
+  }
   if (!sections.length) {
     const empty = document.createElement("div");
     empty.className = "menu-status menu-empty";
@@ -312,23 +387,48 @@ function renderMenu() {
     grid.appendChild(empty);
   }
   sections.forEach(({ id, title, products: sectionProducts }) => {
+    const isCarousel = id === "featured-section" || id === "favorites-section";
     const section = document.createElement("section");
     section.id = id;
-    section.className = "category-group";
+    section.className = `category-group${isCarousel ? " product-carousel" : ""}`;
     const heading = document.createElement("div");
     heading.className = "category-heading";
+    heading.id = `${id}-heading`;
     const titleElement = document.createElement("h3");
     titleElement.textContent = title;
     const count = document.createElement("span");
     count.textContent = `${sectionProducts.length} productos`;
     heading.appendChild(titleElement);
     heading.appendChild(count);
+    let controls = null;
+    if (isCarousel) {
+      controls = document.createElement("div");
+      controls.className = "carousel-controls";
+      controls.hidden = true;
+      const previous = carouselArrow("previous", title);
+      previous.dataset.carouselDirection = "previous";
+      const next = carouselArrow("next", title);
+      next.dataset.carouselDirection = "next";
+      controls.append(previous, next);
+      heading.appendChild(controls);
+    }
     const sectionGrid = document.createElement("div");
-    sectionGrid.className = "category-products";
+    sectionGrid.className = `category-products${isCarousel ? " category-carousel-track" : ""}`;
+    if (isCarousel) {
+      sectionGrid.setAttribute("role", "region");
+      sectionGrid.setAttribute("aria-roledescription", "carrusel");
+      sectionGrid.setAttribute("aria-labelledby", heading.id);
+      sectionGrid.tabIndex = -1;
+    }
     sectionProducts.forEach((product) => sectionGrid.appendChild(renderProductCard(product)));
     section.appendChild(heading);
     section.appendChild(sectionGrid);
     grid.appendChild(section);
+    if (isCarousel) {
+      bindCarousel(sectionGrid, controls);
+      sectionGrid.scrollLeft = carouselScrollPositions.get(id) || 0;
+      updateCarouselControls(sectionGrid);
+    }
   });
   $(".menu-filter").classList.toggle("hidden", !sections.some((section) => section.id === "featured-section"));
   const hasFavorites = sections.some((section) => section.id === "favorites-section");

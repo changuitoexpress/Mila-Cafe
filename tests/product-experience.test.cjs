@@ -433,6 +433,88 @@ test("the cursor tilts the card under it and lets go when it leaves", () => {
   h.dom.window.close();
 });
 
+test("featured and favorite sections are keyboard-accessible carousels while categories stay grids", () => {
+  const h = menuEnvironment();
+  h.w.eval(`products = [
+    {id:"featured-1",name:"Latte",category:"Bebidas",price:50,active:true,activo:true,destacado:true,orden:1},
+    {id:"featured-2",name:"Moka",category:"Bebidas",price:55,active:true,activo:true,destacado:true,orden:2},
+    {id:"featured-3",name:"Chai",category:"Bebidas",price:45,active:true,activo:true,destacado:true,orden:3},
+    {id:"favorite",name:"Pan",category:"Comida",price:30,active:true,activo:true,orden:4},
+    {id:"regular",name:"Té",category:"Té",price:35,active:true,activo:true,orden:5}
+  ];
+  favoriteProductIds = new Set(["featured-1", "favorite"]);
+  renderMenu();`);
+
+  const sections = [...h.$("#products-grid").querySelectorAll(":scope > .category-group")];
+  assert.deepEqual(sections.map((section) => section.querySelector("h3").textContent),
+    ["Destacados", "Tus favoritos", "Bebidas", "Comida", "Té"]);
+  const featured = h.$("#featured-section");
+  const favorites = h.$("#favorites-section");
+  const featuredTrack = featured.querySelector(".category-carousel-track");
+  const favoritesTrack = favorites.querySelector(".category-carousel-track");
+  assert.ok(featuredTrack && favoritesTrack);
+  for (const track of [featuredTrack, favoritesTrack]) {
+    assert.equal(track.getAttribute("role"), "region");
+    assert.equal(track.getAttribute("aria-roledescription"), "carrusel");
+    assert.equal(track.getAttribute("tabindex"), "-1", "non-overflowing rails are not an unnecessary tab stop");
+  }
+  assert.equal(featuredTrack.children.length, 3);
+  assert.equal(favoritesTrack.children.length, 2);
+  assert.equal(featured.querySelector(".product-card h3").textContent, "Latte");
+
+  const ordinaryCategory = sections.find((section) => !section.classList.contains("product-carousel"));
+  assert.ok(ordinaryCategory.querySelector(".category-products"));
+  assert.equal(ordinaryCategory.querySelector(".category-products").classList.contains("category-carousel-track"), false);
+
+  Object.defineProperties(featuredTrack, {
+    clientWidth: { configurable: true, value: 300 },
+    scrollWidth: { configurable: true, value: 540 },
+  });
+  featuredTrack.scrollTo = ({ left }) => {
+    featuredTrack.scrollLeft = left;
+    featuredTrack.dispatchEvent(new h.w.Event("scroll"));
+  };
+  h.w.eval('updateCarouselControls(document.querySelector("#featured-section .category-carousel-track"))');
+  const controls = featured.querySelector(".carousel-controls");
+  const previous = controls.querySelector('[data-carousel-direction="previous"]');
+  const next = controls.querySelector('[data-carousel-direction="next"]');
+  assert.equal(controls.hidden, false);
+  assert.equal(featuredTrack.tabIndex, 0);
+  assert.equal(previous.disabled, true);
+  assert.equal(next.disabled, false);
+  next.click();
+  assert.ok(featuredTrack.scrollLeft > 0, "desktop next arrow scrolls the rail");
+  assert.equal(previous.disabled, false);
+  featuredTrack.dispatchEvent(new h.w.KeyboardEvent("keydown", {
+    key: "ArrowLeft", bubbles: true, cancelable: true,
+  }));
+  assert.equal(featuredTrack.scrollLeft, 0, "left arrow key returns to the previous card");
+  h.w.eval('openProductModal = (product) => { window.__openedProductId = product.id; }');
+  featuredTrack.querySelector(".product-card").click();
+  assert.equal(h.w.__openedProductId, "featured-1", "tapping a card still opens its detail");
+
+  Object.defineProperties(favoritesTrack, {
+    clientWidth: { configurable: true, value: 350 },
+    scrollWidth: { configurable: true, value: 350 },
+  });
+  h.w.eval('updateCarouselControls(document.querySelector("#favorites-section .category-carousel-track"))');
+  assert.equal(favorites.querySelector(".carousel-controls").hidden, true, "no arrows or scroll when all cards fit");
+  h.dom.window.close();
+});
+
+test("featured and favorite carousels use native horizontal touch scrolling and snap without changing category grids", () => {
+  const css = read("menu-experience.css");
+  assert.match(css, /category-products\.category-carousel-track\s*\{[^}]*overflow-x:\s*auto/s);
+  assert.match(css, /category-products\.category-carousel-track\s*\{[^}]*scroll-snap-type:\s*x proximity/s);
+  assert.match(css, /category-products\.category-carousel-track\s*\{[^}]*overscroll-behavior-x:\s*contain/s);
+  assert.match(css, /category-products\.category-carousel-track\s*\{[^}]*touch-action:\s*pan-x pan-y/s);
+  assert.match(css, /category-carousel-track::-webkit-scrollbar\s*\{\s*display:\s*none/);
+  assert.match(css, /category-carousel-track\s*>\s*\.product-card\s*\{[^}]*flex:\s*0 0 auto/s);
+  assert.match(css, /category-carousel-track\s*>\s*\.product-card\s*\{[^}]*width:\s*156px/s);
+  assert.match(css, /category-carousel-track\s*>\s*\.product-card\s*\{[^}]*scroll-snap-align:\s*start/s);
+  assert.match(css, /@media\s*\(hover:\s*hover\)\s*and\s*\(pointer:\s*fine\)\s*and\s*\(min-width:\s*720px\)/);
+});
+
 test("category indicator follows the tapped chip, holds it during the glide and survives re-renders", () => {
   const h = menuEnvironment();
   const bar = h.$("#category-chips");

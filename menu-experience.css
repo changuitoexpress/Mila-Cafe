@@ -217,6 +217,58 @@ body .error-text:empty { min-height: 0; margin-top: 0; }
   font: 400 10px/1.5 'JetBrains Mono', monospace;
 }
 #app .category-products { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 28px 16px; }
+#app .category-products.category-carousel-track {
+  display: flex;
+  flex-flow: row nowrap;
+  align-items: stretch;
+  gap: 14px;
+  margin-inline: -20px;
+  padding: 2px 20px 14px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scroll-padding-inline: 20px;
+  scroll-snap-type: x proximity;
+  touch-action: pan-x pan-y;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+#app .category-products.category-carousel-track::-webkit-scrollbar { display: none; }
+#app .category-carousel-track > .product-card {
+  flex: 0 0 auto;
+  width: 156px;
+  min-width: 156px;
+  scroll-snap-align: start;
+}
+#app .carousel-controls { display: none; align-items: center; gap: 8px; }
+#app .carousel-controls[hidden] { display: none !important; }
+#app .carousel-arrow {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  transition: background-color .16s ease, border-color .16s ease, color .16s ease;
+}
+#app .carousel-arrow:hover:not(:disabled) { background: var(--surface-raised); border-color: var(--border-strong); }
+#app .carousel-arrow:disabled { opacity: .42; cursor: default; }
+#app .carousel-arrow svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+@media (hover: hover) and (pointer: fine) and (min-width: 720px) {
+  #app .product-carousel.has-overflow .carousel-controls { display: flex; }
+}
 #app .product-card {
   min-width: 0;
   gap: 8px;
