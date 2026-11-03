@@ -219,6 +219,15 @@ window.MilaMotion = (() => {
       const y = floating.offsetTop + floating.clientTop + (icon ? icon.offsetTop + icon.offsetHeight / 2 : floating.offsetHeight / 2);
       return { element: floating, point: { x, y } };
     }
+    const bottomNavCart = document.getElementById("bottom-nav-cart");
+    if (rendered(bottomNavCart)) {
+      const icon = bottomNavCart.querySelector("svg");
+      const box = icon?.getBoundingClientRect?.() || bottomNavCart.getBoundingClientRect();
+      return {
+        element: bottomNavCart,
+        point: { x: box.left + box.width / 2, y: box.top + box.height / 2 },
+      };
+    }
     const header = document.getElementById("btn-cart");
     if (!rendered(header)) return null;
     const box = header.getBoundingClientRect();
@@ -229,7 +238,7 @@ window.MilaMotion = (() => {
     if (canAnimate(element)) {
       element.animate([{ scale: 1 }, { scale: 1.1, offset: 0.35 }, { scale: 1 }], { duration: 460, easing: "cubic-bezier(.3, .7, .4, 1)" });
     }
-    ["cart-count", "floating-cart-count"].forEach((id) => {
+    ["cart-count", "floating-cart-count", "bottom-nav-cart-count"].forEach((id) => {
       const badge = document.getElementById(id);
       if (canAnimate(badge) && rendered(badge)) badge.animate([{ scale: 0.4 }, { scale: 1 }], { duration: 520, easing: SPRING });
     });

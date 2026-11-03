@@ -43,6 +43,7 @@ let activeQty = 1;
 let favoriteProductIds = new Set();
 let categoryObserver = null;
 let menuSearch = "";
+let menuSearchVisible = true;
 let checkoutBusy = false;
 let carouselResizeListenerAttached = false;
 
@@ -94,11 +95,13 @@ $("#menu-logout")?.addEventListener("click", () => {
 });
 $("#menu-favorites")?.addEventListener("click", () => {
   closeMenu();
-  scrollToSection("favorites-section");
+  activateCustomerAction("favorites");
 });
 $("#header-back")?.addEventListener("click", () => window.history.back());
-$("#header-favorites")?.addEventListener("click", () => scrollToSection("favorites-section"));
+$("#header-favorites")?.addEventListener("click", () => activateCustomerAction("favorites"));
 $("#header-search").addEventListener("click", () => {
+  if ($("#view-cuenta").classList.contains("active")) activateCustomerAction("menu");
+  menuSearchVisible = true;
   $("#menu-search-bar").classList.remove("hidden");
   $("#header-search").setAttribute("aria-expanded", "true");
   $("#menu-search-input").focus();
@@ -216,6 +219,11 @@ async function startApp() {
   $("#app").classList.remove("hidden");
   $$(".tab").forEach((tab) => tab.classList.toggle("active", tab.dataset.tab === "menu"));
   $$(".view").forEach((view) => view.classList.toggle("active", view.id === "view-menu"));
+  menuSearchVisible = true;
+  $("#menu-search-bar").classList.remove("hidden");
+  $("#header-search").setAttribute("aria-expanded", "true");
+  renderWalletBalances(currentUser.wallet_balance);
+  updateCustomerBottomNav("menu");
   $("#user-name-tag").textContent = currentUser.name || "Cliente Mila";
   updateAdminLinks();
   await loadFavorites();
@@ -279,6 +287,7 @@ function handleLogout() {
   updateAdminLinks();
   menuSearch = "";
   $("#menu-search-input").value = "";
+  menuSearchVisible = false;
   $("#menu-search-bar").classList.add("hidden");
   $("#header-search").setAttribute("aria-expanded", "false");
   products = [];
@@ -310,6 +319,7 @@ async function updateAdminLinks() {
 function closeMenuSearch() {
   menuSearch = "";
   $("#menu-search-input").value = "";
+  menuSearchVisible = false;
   $("#menu-search-bar").classList.add("hidden");
   $("#header-search").setAttribute("aria-expanded", "false");
   renderMenu();
@@ -634,6 +644,58 @@ function slugify(value, index) {
 // ============================================================
 // NAVEGACIÓN ENTRE TABS
 // ============================================================
+function updateCustomerBottomNav(activeAction) {
+  $$("#customer-bottom-nav [data-customer-action]").forEach((button) => {
+    const isActive = button.dataset.customerAction === activeAction;
+    button.classList.toggle("is-active", isActive);
+    if (isActive) button.setAttribute("aria-current", "page");
+    else button.removeAttribute("aria-current");
+  });
+}
+
+function activateCustomerAction(action) {
+  if (action === "cart") {
+    updateCustomerBottomNav("cart");
+    openCart();
+    return;
+  }
+
+  const tab = $(`.tab[data-tab="${action === "account" ? "cuenta" : "menu"}"]`);
+  tab?.click();
+
+  if (action === "account") {
+    updateCustomerBottomNav("account");
+    return;
+  }
+
+  if (action === "favorites" || action === "featured") {
+    if (menuSearch) {
+      menuSearch = "";
+      $("#menu-search-input").value = "";
+      renderMenu();
+    }
+    const sectionId = action === "favorites" ? "favorites-section" : "featured-section";
+    if (document.getElementById(sectionId)) {
+      scrollToSection(sectionId);
+    } else if (action === "favorites") {
+      scrollToSection("menu-top");
+      showToast("Guarda productos con el corazón para ver tus favoritos.");
+    } else {
+      scrollToSection("menu-top");
+      showToast("Aún no hay productos destacados.");
+    }
+    updateCustomerBottomNav(action === "featured" ? "menu" : "favorites");
+    return;
+  }
+
+  updateCustomerBottomNav("menu");
+  scrollToSection("menu-top");
+}
+
+$$("[data-customer-action]").forEach((button) =>
+  button.addEventListener("click", () => activateCustomerAction(button.dataset.customerAction))
+);
+
 $$(".tab").forEach((tab) =>
   tab.addEventListener("click", () => {
     const previousTab = $(".tab.active")?.dataset.tab;
@@ -641,6 +703,10 @@ $$(".tab").forEach((tab) =>
     tab.classList.add("active");
     $$(".view").forEach((v) => v.classList.remove("active"));
     $(`#view-${tab.dataset.tab}`).classList.add("active");
+    const isMenu = tab.dataset.tab === "menu";
+    $("#category-chips").classList.toggle("hidden", !isMenu || getMenuSections().length === 0);
+    $("#menu-search-bar").classList.toggle("hidden", !isMenu || !menuSearchVisible);
+    updateCustomerBottomNav(isMenu ? "menu" : "account");
     window.MilaMotion?.viewChanged?.(previousTab, tab.dataset.tab);
     if (tab.dataset.tab === "cuenta") {
       refreshWalletUI();
@@ -911,6 +977,10 @@ function updateCartBadge() {
   floatingCount.textContent = count;
   floatingCart.classList.toggle("hidden", count === 0);
   floatingCart.setAttribute("aria-label", `Abrir carrito (${count} productos)`);
+  const bottomCount = $("#bottom-nav-cart-count");
+  bottomCount.textContent = count;
+  bottomCount.classList.toggle("hidden", count === 0);
+  $("#bottom-nav-cart").setAttribute("aria-label", `Abrir carrito (${count} productos)`);
 }
 
 // ============================================================
@@ -1164,11 +1234,19 @@ async function refreshWalletUI() {
     currentUser.is_admin = data.is_admin === true;
     currentUser.name = data.name || currentUser.name;
     currentUser.phone = data.phone || currentUser.phone;
-    $("#wallet-balance").textContent = money(data.wallet_balance);
+    renderWalletBalances(data.wallet_balance);
     window.MilaMotion?.walletChanged?.($("#wallet-balance"), previousBalance, Number(data.wallet_balance || 0));
     saveSession();
     updateAdminLinks();
   }
+}
+
+function renderWalletBalances(balance) {
+  const formatted = money(balance);
+  const accountBalance = $("#wallet-balance");
+  const homeBalance = $("#home-wallet-balance");
+  if (accountBalance) accountBalance.textContent = formatted;
+  if (homeBalance) homeBalance.textContent = formatted;
 }
 
 async function loadTransactions() {

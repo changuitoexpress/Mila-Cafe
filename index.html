@@ -22,7 +22,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <link rel="stylesheet" href="theme.css" />
-<link rel="stylesheet" href="styles.css?v=login-flow-20261103" />
+<link rel="stylesheet" href="styles.css?v=home-wallet-nav-2" />
 <link rel="stylesheet" href="product-sheet.css" />
 <link rel="stylesheet" href="menu-experience.css" />
 <link rel="stylesheet" href="menu-motion.css" />
@@ -78,7 +78,7 @@
           <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.2A8.2 8.2 0 0 1 9.8 4a8.2 8.2 0 1 0 10.2 10.2Z"></path></svg>
           <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2"></circle><path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M5.5 18.5l1.7-1.7M16.8 7.2l1.7-1.7"></path></svg>
         </button>
-        <button id="header-search" class="header-icon-button" type="button" aria-label="Buscar en el menú" aria-expanded="false" aria-controls="menu-search-bar">
+        <button id="header-search" class="header-icon-button" type="button" aria-label="Buscar en el menú" aria-expanded="true" aria-controls="menu-search-bar">
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.3"></circle><path d="m16 16 4.5 4.5"></path></svg>
         </button>
         <button id="header-favorites" class="header-icon-button" type="button" aria-label="Ver favoritos">
@@ -90,10 +90,13 @@
         </button>
       </div>
     </header>
-    <div id="menu-search-bar" class="menu-search-bar hidden" role="search">
-      <label class="search-label" for="menu-search-input">Buscar productos</label>
-      <input id="menu-search-input" class="input" type="search" placeholder="Buscar por nombre o descripción" autocomplete="off" />
-      <button id="menu-search-close" class="btn btn-secondary" type="button">Cerrar y limpiar</button>
+    <div id="menu-search-bar" class="menu-search-bar" role="search">
+      <label class="visually-hidden" for="menu-search-input">Buscar productos</label>
+      <svg class="menu-search-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.3"></circle><path d="m16 16 4.5 4.5"></path></svg>
+      <input id="menu-search-input" class="input" type="search" placeholder="Buscar en el menú…" autocomplete="off" />
+      <button id="menu-search-close" class="search-clear" type="button" aria-label="Limpiar y ocultar búsqueda">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"></path></svg>
+      </button>
     </div>
     <nav id="category-chips" class="category-chips hidden" aria-label="Categorías del menú"></nav>
 
@@ -113,11 +116,45 @@
     <section id="view-menu" class="view active">
       <div class="menu-intro">
         <p class="eyebrow">Hola, <span id="user-name-tag">—</span></p>
-        <h2 id="menu-top">Explora el menú</h2>
+        <h2 id="menu-top">¿Qué se te antoja?</h2>
         <div class="menu-filters" aria-label="Filtros del menú">
           <button class="menu-filter active" type="button">Destacados</button>
         </div>
       </div>
+      <section class="home-wallet-card" aria-labelledby="home-wallet-title">
+        <div class="home-wallet-top">
+          <span class="home-wallet-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><rect x="3.5" y="6" width="17" height="14" rx="3"></rect><path d="M3.5 9h17M16 14h.01M7 6V4.5A1.5 1.5 0 0 1 8.5 3h9"></path></svg>
+          </span>
+          <div class="home-wallet-heading">
+            <p id="home-wallet-title" class="home-wallet-label">Mi monedero</p>
+            <p class="home-wallet-amount">$<span id="home-wallet-balance">0.00</span></p>
+          </div>
+          <button class="home-wallet-link" type="button" data-customer-action="account">Ver saldo</button>
+        </div>
+        <div class="home-wallet-note">
+          <span class="home-wallet-status">Saldo disponible para tu próxima compra</span>
+          <span class="home-wallet-cashback">Gana <strong>5% de cashback</strong> en tus compras</span>
+        </div>
+      </section>
+      <nav class="home-shortcuts" aria-label="Accesos rápidos">
+        <button class="home-shortcut" type="button" data-customer-action="featured">
+          <span class="home-shortcut-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9L12 3Z"></path></svg></span>
+          <span>Destacados</span>
+        </button>
+        <button class="home-shortcut" type="button" data-customer-action="favorites">
+          <span class="home-shortcut-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20.8 8.8c0 5-8.8 10-8.8 10s-8.8-5-8.8-10A4.8 4.8 0 0 1 12 6a4.8 4.8 0 0 1 8.8 2.8Z"></path></svg></span>
+          <span>Favoritos</span>
+        </button>
+        <button class="home-shortcut" type="button" data-customer-action="account">
+          <span class="home-shortcut-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3.5" y="6" width="17" height="14" rx="3"></rect><path d="M3.5 9h17M16 14h.01M7 6V4.5A1.5 1.5 0 0 1 8.5 3h9"></path></svg></span>
+          <span>Monedero</span>
+        </button>
+        <button class="home-shortcut" type="button" data-customer-action="cart">
+          <span class="home-shortcut-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 4h2l2.2 11.2a2 2 0 0 0 2 1.6h8.9a2 2 0 0 0 1.9-1.4L22 8H6"></path><circle cx="10" cy="20" r="1"></circle><circle cx="18" cy="20" r="1"></circle></svg></span>
+          <span>Carrito</span>
+        </button>
+      </nav>
       <div id="products-grid" class="products-grid">
         <p class="loading-text">Cargando menú…</p>
       </div>
@@ -151,6 +188,27 @@
         <p class="loading-text">Cargando historial…</p>
       </div>
     </section>
+    <nav id="customer-bottom-nav" class="customer-bottom-nav" aria-label="Accesos directos">
+      <button class="customer-bottom-action is-active" type="button" data-customer-action="menu" aria-current="page">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14v8a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4V8ZM8 8a4 4 0 0 1 8 0M8 4v2M12 3v3M16 4v2"></path></svg>
+        <span>Menú</span>
+      </button>
+      <button class="customer-bottom-action" type="button" data-customer-action="favorites">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 8.8c0 5-8.8 10-8.8 10s-8.8-5-8.8-10A4.8 4.8 0 0 1 12 6a4.8 4.8 0 0 1 8.8 2.8Z"></path></svg>
+        <span>Favoritos</span>
+      </button>
+      <button id="bottom-nav-cart" class="customer-bottom-action" type="button" data-customer-action="cart" aria-label="Abrir carrito">
+        <span class="customer-bottom-cart-icon floating-cart-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M5 8h14l-1 12H6L5 8ZM9 8a3 3 0 0 1 6 0"></path></svg>
+          <span id="bottom-nav-cart-count" class="bottom-nav-cart-count hidden">0</span>
+        </span>
+        <span>Carrito</span>
+      </button>
+      <button class="customer-bottom-action" type="button" data-customer-action="account">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"></circle><path d="M5 20c.4-3.3 3.2-5.5 7-5.5s6.6 2.2 7 5.5"></path></svg>
+        <span>Mi cuenta</span>
+      </button>
+    </nav>
 
   </div>
 
@@ -251,8 +309,8 @@
   <script src="product-media.js"></script>
   <script src="product-customization.js"></script>
   <script src="client-product-sheet.js"></script>
-  <script src="menu-motion.js"></script>
-  <script src="main.js?v=login-flow-20261103"></script>
+  <script src="menu-motion.js?v=home-wallet-nav-1"></script>
+  <script src="main.js?v=home-wallet-nav-1"></script>
   <script src="pwa.js"></script>
 </body>
 </html>

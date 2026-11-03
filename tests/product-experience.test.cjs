@@ -588,6 +588,7 @@ test("wallet counts to the new balance, shows the difference and waits until Mi 
   h.fixture.profiles.push({ id: "customer", name: "Prueba", phone: "0000000000", wallet_balance: 35.5, is_admin: false });
   await h.w.eval("refreshWalletUI()");
   assert.equal(h.$("#wallet-balance").textContent, "35.50");
+  assert.equal(h.$("#home-wallet-balance").textContent, "35.50");
   assert.equal(h.$(".wallet-delta"), null, "nothing plays while Mi cuenta is closed");
   h.$('.tab[data-tab="cuenta"]').click();
   await h.flush();
@@ -597,6 +598,32 @@ test("wallet counts to the new balance, shows the difference and waits until Mi 
   assert.equal(h.$("#wallet-balance").textContent, "30.50");
   assert.equal(h.$(".wallet-delta").textContent, "−$5.00");
   assert.ok(h.$(".wallet-delta").classList.contains("is-negative"));
+  assert.deepEqual(h.errors, []);
+  h.dom.window.close();
+});
+
+test("home shortcuts keep the wallet current and open the existing customer panels", async () => {
+  const h = environment();
+  h.fixture.profiles.push({ id: "customer", name: "Prueba", phone: "0000000000", wallet_balance: 12.25, is_admin: false });
+  await h.w.eval('products = [{id:"p",name:"Latte",category:"Café",price:50,active:true,activo:true}]; favoriteProductIds = new Set(["p"]); renderMenu();');
+  await h.w.eval("refreshWalletUI()");
+
+  assert.equal(h.$("#home-wallet-balance").textContent, "12.25");
+  h.$('#customer-bottom-nav [data-customer-action="favorites"]').click();
+  assert.equal(h.$("#favorites-section").scrolledIntoView, true);
+  assert.ok(h.$('#customer-bottom-nav [data-customer-action="favorites"]').classList.contains("is-active"));
+
+  h.$('#customer-bottom-nav [data-customer-action="account"]').click();
+  await h.flush();
+  assert.ok(h.$("#view-cuenta").classList.contains("active"));
+  assert.ok(h.$("#menu-search-bar").classList.contains("hidden"));
+  assert.ok(h.$("#category-chips").classList.contains("hidden"));
+
+  h.$('#customer-bottom-nav [data-customer-action="menu"]').click();
+  assert.ok(h.$("#view-menu").classList.contains("active"));
+  assert.ok(h.$('#customer-bottom-nav [data-customer-action="menu"]').classList.contains("is-active"));
+  h.$("#bottom-nav-cart").click();
+  assert.equal(h.$("#toast").textContent, "Tu carrito está vacío");
   assert.deepEqual(h.errors, []);
   h.dom.window.close();
 });
