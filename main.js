@@ -129,8 +129,8 @@ async function handleLogin() {
     errorEl = $("#login-error");
     errorEl.textContent = "";
 
-    if (phone.length < 10) {
-      errorEl.textContent = "Escribe un teléfono válido de 10 dígitos.";
+    if (!/^\d{10}$/.test(phone)) {
+      errorEl.textContent = "Escribe los 10 dígitos de tu teléfono, solo números.";
       return;
     }
 
@@ -148,6 +148,7 @@ async function handleLogin() {
 
     if (existing) {
       currentUser = existing;
+      showToast("Este número ya está registrado; abrimos tu perfil.");
     } else {
       // 2. Si no existe, lo creamos
       const { data: created, error: insertErr } = await supabaseClient
@@ -155,11 +156,24 @@ async function handleLogin() {
         .insert({ phone, name: name || "Cliente Mila" })
         .select()
         .single();
-      if (insertErr) {
+      if (insertErr?.code === "23505") {
+        // Otra solicitud pudo crear el mismo teléfono tras nuestra búsqueda.
+        // La restricción UNIQUE evita el duplicado; mantenemos el acceso actual.
+        const { data: duplicate, error: duplicateErr } = await supabaseClient
+          .from("profiles")
+          .select("*")
+          .eq("phone", phone)
+          .maybeSingle();
+        if (duplicateErr) throw duplicateErr;
+        if (!duplicate) throw insertErr;
+        currentUser = duplicate;
+        showToast("Este número ya estaba registrado; abrimos tu perfil.");
+      } else if (insertErr) {
         console.error("Error de Supabase DB:", insertErr);
         throw insertErr;
+      } else {
+        currentUser = created;
       }
-      currentUser = created;
     }
 
     saveSession();

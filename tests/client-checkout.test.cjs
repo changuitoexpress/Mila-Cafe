@@ -98,6 +98,54 @@ function fillAddress(h, prefix = "delivery") {
   Object.entries(address).forEach(([field, value]) => { h.element(`#${prefix}-${field}`).value = value; });
 }
 
+test("login requires exactly ten numeric phone digits before querying Supabase", async () => {
+  const h = setup();
+  h.run("currentUser = null;");
+  h.element("#phone-input").value = "12345abc90";
+  h.run("startApp = async () => { appStarted = true; };");
+
+  await h.run("handleLogin()");
+
+  assert.equal(h.calls.length, 0);
+  assert.match(h.element("#login-error").textContent, /10 dígitos.*solo números/);
+  assert.equal(h.run("typeof appStarted"), "undefined");
+});
+
+test("an existing phone keeps access and gets a registration notice", async () => {
+  const h = setup();
+  const existing = { id: "profile-existing", phone: "1234567890", name: "Ana" };
+  h.run("currentUser = null; startApp = async () => { appStarted = true; };");
+  h.element("#phone-input").value = existing.phone;
+  h.responseQueue.push({ data: existing, error: null });
+
+  await h.run("handleLogin()");
+
+  assert.equal(h.run("currentUser.id"), existing.id);
+  assert.equal(h.element("#toast").textContent, "Este número ya está registrado; abrimos tu perfil.");
+  assert.equal(h.run("appStarted"), true);
+  assert.equal(h.calls.length, 1);
+});
+
+test("a concurrent duplicate insert recovers the existing profile", async () => {
+  const h = setup();
+  const existing = { id: "profile-existing", phone: "1234567890", name: "Ana" };
+  h.run("currentUser = null; startApp = async () => { appStarted = true; };");
+  h.element("#phone-input").value = existing.phone;
+  h.element("#name-input").value = "Ana";
+  h.responseQueue.push(
+    { data: null, error: null },
+    { data: null, error: { code: "23505" } },
+    { data: existing, error: null },
+  );
+
+  await h.run("handleLogin()");
+
+  assert.equal(h.calls.filter((call) => call.table === "profiles").length, 3);
+  assert.equal(h.run("currentUser.id"), existing.id);
+  assert.equal(h.element("#toast").textContent, "Este número ya estaba registrado; abrimos tu perfil.");
+  assert.equal(h.run("appStarted"), true);
+});
+
 test("local address has priority and another customer's stored address is ignored", async () => {
   const h = setup();
   h.storage.set("milaCafeAddress", JSON.stringify({ user_id: "client-a", ...address }));
