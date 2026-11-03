@@ -111,7 +111,7 @@ test("login requires exactly ten numeric phone digits before querying Supabase",
   assert.equal(h.run("typeof appStarted"), "undefined");
 });
 
-test("an existing phone keeps access and gets a registration notice", async () => {
+test("login opens an existing profile without creating a duplicate", async () => {
   const h = setup();
   const existing = { id: "profile-existing", phone: "1234567890", name: "Ana" };
   h.run("currentUser = null; startApp = async () => { appStarted = true; };");
@@ -121,15 +121,46 @@ test("an existing phone keeps access and gets a registration notice", async () =
   await h.run("handleLogin()");
 
   assert.equal(h.run("currentUser.id"), existing.id);
-  assert.equal(h.element("#toast").textContent, "Este número ya está registrado; abrimos tu perfil.");
   assert.equal(h.run("appStarted"), true);
   assert.equal(h.calls.length, 1);
 });
 
-test("a concurrent duplicate insert recovers the existing profile", async () => {
+test("registration blocks a phone already in profiles with the requested message", async () => {
   const h = setup();
   const existing = { id: "profile-existing", phone: "1234567890", name: "Ana" };
   h.run("currentUser = null; startApp = async () => { appStarted = true; };");
+  h.element("#login-mode-toggle").listeners.click();
+  h.element("#phone-input").value = existing.phone;
+  h.responseQueue.push({ data: existing, error: null });
+
+  await h.run("handleLogin()");
+
+  assert.equal(h.element("#login-error").textContent, "Este número ya está registrado. Por favor, inicia sesión.");
+  assert.equal(h.run("currentUser"), null);
+  assert.equal(h.run("typeof appStarted"), "undefined");
+  assert.equal(h.calls.length, 1);
+  assert.equal(h.calls[0].operation, "select");
+});
+
+test("login with an unregistered phone offers account creation instead of registering", async () => {
+  const h = setup();
+  h.run("currentUser = null; startApp = async () => { appStarted = true; };");
+  h.element("#phone-input").value = "1234567890";
+  h.responseQueue.push({ data: null, error: null });
+
+  await h.run("handleLogin()");
+
+  assert.equal(h.element("#login-error").textContent, "No encontramos una cuenta con este número. Crea una cuenta primero.");
+  assert.equal(h.run("currentUser"), null);
+  assert.equal(h.run("typeof appStarted"), "undefined");
+  assert.equal(h.calls.length, 1);
+});
+
+test("registration recovers a concurrent unique conflict and blocks it", async () => {
+  const h = setup();
+  const existing = { id: "profile-existing", phone: "1234567890", name: "Ana" };
+  h.run("currentUser = null; startApp = async () => { appStarted = true; };");
+  h.element("#login-mode-toggle").listeners.click();
   h.element("#phone-input").value = existing.phone;
   h.element("#name-input").value = "Ana";
   h.responseQueue.push(
@@ -141,8 +172,27 @@ test("a concurrent duplicate insert recovers the existing profile", async () => 
   await h.run("handleLogin()");
 
   assert.equal(h.calls.filter((call) => call.table === "profiles").length, 3);
-  assert.equal(h.run("currentUser.id"), existing.id);
-  assert.equal(h.element("#toast").textContent, "Este número ya estaba registrado; abrimos tu perfil.");
+  assert.equal(h.element("#login-error").textContent, "Este número ya está registrado. Por favor, inicia sesión.");
+  assert.equal(h.run("currentUser"), null);
+  assert.equal(h.run("typeof appStarted"), "undefined");
+});
+
+test("registration creates a profile only when its phone is not already registered", async () => {
+  const h = setup();
+  const created = { id: "profile-new", phone: "1234567890", name: "Ana" };
+  h.run("currentUser = null; startApp = async () => { appStarted = true; };");
+  h.element("#login-mode-toggle").listeners.click();
+  h.element("#phone-input").value = created.phone;
+  h.element("#name-input").value = created.name;
+  h.responseQueue.push({ data: null, error: null }, { data: created, error: null });
+
+  await h.run("handleLogin()");
+
+  assert.equal(h.calls.length, 2);
+  assert.equal(h.calls[1].operation, "insert");
+  assert.equal(h.calls[1].payload.phone, created.phone);
+  assert.equal(h.calls[1].payload.name, created.name);
+  assert.equal(h.run("currentUser.id"), created.id);
   assert.equal(h.run("appStarted"), true);
 });
 

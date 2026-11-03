@@ -84,6 +84,12 @@ body{
 .logo{ width:min(220px, 72%); margin:0 auto 10px; line-height:0; }
 .logo .brand-logo{ width:100%; height:auto; }
 .login-sub{ font-size:14px; color:var(--text-2); margin-bottom:26px; }
+.login-mode-title{ font-size:14px; font-weight:600; margin:-10px 0 12px; }
+.login-mode-toggle{
+  margin-top:12px; padding:8px; border:0; background:transparent;
+  color:var(--accent); font:inherit; font-size:13px; text-decoration:underline; cursor:pointer;
+}
+.login-mode-toggle:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; border-radius:4px; }
 
 .field-label{
   display:block;

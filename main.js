@@ -77,10 +77,13 @@ $$("[data-close]").forEach((btn) =>
 );
 
 // ============================================================
-// LOGIN — identifica al cliente por teléfono
-// Si el teléfono no existe en "profiles", se crea uno nuevo.
+// ACCESO — el cliente puede iniciar sesión o crear una cuenta por teléfono.
 // ============================================================
+let customerAccessMode = "login";
 $("#btn-login").addEventListener("click", handleLogin);
+$("#login-mode-toggle").addEventListener("click", () => {
+  setCustomerAccessMode(customerAccessMode === "login" ? "register" : "login");
+});
 $("#btn-logout")?.addEventListener("click", handleLogout);
 $("#menu-toggle")?.addEventListener("click", openMenu);
 $("#menu-close")?.addEventListener("click", closeMenu);
@@ -121,11 +124,24 @@ ADDRESS_FIELDS.forEach((field) => {
 });
 $("#saved-address-form").addEventListener("submit", saveProfileAddress);
 
+function setCustomerAccessMode(mode) {
+  customerAccessMode = mode;
+  const registering = mode === "register";
+  $("#login-mode-title").textContent = registering ? "Crea tu cuenta" : "Inicia sesión con tu teléfono";
+  $("#login-name-fields").classList.toggle("hidden", !registering);
+  $("#btn-login").textContent = registering ? "Crear cuenta" : "Iniciar sesión";
+  $("#login-mode-toggle").textContent = registering
+    ? "¿Ya tienes cuenta? Inicia sesión"
+    : "¿No tienes cuenta? Crear cuenta";
+  $("#login-error").textContent = "";
+}
+
 async function handleLogin() {
   let errorEl;
   try {
     const phone = $("#phone-input").value.trim();
     const name = $("#name-input").value.trim();
+    const registering = customerAccessMode === "register";
     errorEl = $("#login-error");
     errorEl.textContent = "";
 
@@ -146,11 +162,20 @@ async function handleLogin() {
       throw findErr;
     }
 
+    if (existing && registering) {
+      errorEl.textContent = "Este número ya está registrado. Por favor, inicia sesión.";
+      return;
+    }
+
     if (existing) {
       currentUser = existing;
-      showToast("Este número ya está registrado; abrimos tu perfil.");
     } else {
-      // 2. Si no existe, lo creamos
+      if (!registering) {
+        errorEl.textContent = "No encontramos una cuenta con este número. Crea una cuenta primero.";
+        return;
+      }
+
+      // 2. Crear cuenta únicamente si el teléfono todavía no está registrado.
       const { data: created, error: insertErr } = await supabaseClient
         .from("profiles")
         .insert({ phone, name: name || "Cliente Mila" })
@@ -166,8 +191,8 @@ async function handleLogin() {
           .maybeSingle();
         if (duplicateErr) throw duplicateErr;
         if (!duplicate) throw insertErr;
-        currentUser = duplicate;
-        showToast("Este número ya estaba registrado; abrimos tu perfil.");
+        errorEl.textContent = "Este número ya está registrado. Por favor, inicia sesión.";
+        return;
       } else if (insertErr) {
         console.error("Error de Supabase DB:", insertErr);
         throw insertErr;

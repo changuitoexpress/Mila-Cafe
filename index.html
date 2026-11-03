@@ -22,7 +22,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <link rel="stylesheet" href="theme.css" />
-<link rel="stylesheet" href="styles.css" />
+<link rel="stylesheet" href="styles.css?v=login-flow-20261103" />
 <link rel="stylesheet" href="product-sheet.css" />
 <link rel="stylesheet" href="menu-experience.css" />
 <link rel="stylesheet" href="menu-motion.css" />
@@ -40,15 +40,19 @@
         <img class="brand-logo brand-logo-on-dark" src="brand/logo-crema.png" width="220" height="127" alt="Mila Café" loading="lazy" />
       </h1>
       <p class="login-sub">Tu menú, tu monedero y tu cashback en un solo lugar.</p>
+      <p id="login-mode-title" class="login-mode-title">Inicia sesión con tu teléfono</p>
 
       <label class="field-label" for="phone-input">Tu número de teléfono</label>
       <input id="phone-input" class="input" type="tel" placeholder="10 dígitos" maxlength="10" inputmode="numeric" />
 
-      <label class="field-label" for="name-input">Tu nombre (solo la primera vez)</label>
-      <input id="name-input" class="input" type="text" placeholder="¿Cómo te llamamos?" />
+      <div id="login-name-fields" class="hidden">
+        <label class="field-label" for="name-input">Tu nombre</label>
+        <input id="name-input" class="input" type="text" placeholder="¿Cómo te llamamos?" />
+      </div>
 
-      <button id="btn-login" class="btn btn-primary btn-block">Entrar</button>
-      <p id="login-error" class="error-text"></p>
+      <button id="btn-login" class="btn btn-primary btn-block" type="button">Iniciar sesión</button>
+      <p id="login-error" class="error-text" role="alert" aria-live="polite"></p>
+      <button id="login-mode-toggle" class="login-mode-toggle" type="button">¿No tienes cuenta? Crear cuenta</button>
     </div>
   </section>
 
@@ -248,7 +252,7 @@
   <script src="product-customization.js"></script>
   <script src="client-product-sheet.js"></script>
   <script src="menu-motion.js"></script>
-  <script src="main.js"></script>
+  <script src="main.js?v=login-flow-20261103"></script>
   <script src="pwa.js"></script>
 </body>
 </html>
