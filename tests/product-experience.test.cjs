@@ -63,7 +63,12 @@ function environment(admin = false) {
       rpcCalls.push({name,args});
       if (rpcFailure) { const message = rpcFailure; rpcFailure = null; return {data:{ok:false,error:message},error:null}; }
       let data;
-      if (name === "admin_set_product_option_group") {
+      if (name === "admin_set_product_active") {
+        const row = fixture.products.find((item) => item.id === args.p_id);
+        row.active = args.p_activo;
+        row.activo = args.p_activo;
+        data = row;
+      } else if (name === "admin_set_product_option_group") {
         let row = fixture.product_option_groups.find((item) => item.product_id === args.p_product_id && item.group_id === args.p_group_id);
         if (!row) { row = {product_id:args.p_product_id,group_id:args.p_group_id}; fixture.product_option_groups.push(row); }
         row.activo = args.p_asignado;
@@ -122,6 +127,50 @@ function environment(admin = false) {
   const change = (selector, value) => { const input = $(selector); input.value = value; input.dispatchEvent(new w.Event("change",{bubbles:true})); };
   return {dom,w,fixture,calls,rpcCalls,uploads,errors,$,flush,change,failRpc: (message) => { rpcFailure = message; }};
 }
+
+test("admin catalog shows hidden products and can reactivate them", async () => {
+  const h = environment(true);
+  h.fixture.products.push({
+    ...product(), id: "hidden", name: "Producto oculto", active: false, activo: false,
+  });
+
+  await h.w.eval("loadAdminProducts()");
+
+  const catalogQuery = h.calls.filter((call) => call.table === "products").at(-1);
+  assert.deepEqual(catalogQuery.filters, [], "the admin catalog must not filter inactive products");
+  assert.ok(h.$('[data-id="p"]'), "active products remain listed");
+  assert.ok(h.$('[data-id="hidden"]'), "inactive products remain listed");
+  assert.match(h.$('[data-id="hidden"] .switch-text').textContent, /Oculto/);
+
+  const toggle = h.$('[data-product-toggle="hidden"]');
+  toggle.checked = true;
+  toggle.dispatchEvent(new h.w.Event("change", { bubbles: true }));
+  await h.flush();
+
+  const activation = h.rpcCalls.find((call) => call.name === "admin_set_product_active");
+  assert.equal(activation.args.p_id, "hidden");
+  assert.equal(activation.args.p_activo, true);
+  assert.equal(activation.args.p_admin_id, "test-admin");
+  assert.equal(activation.args.p_pin, "123456");
+  assert.equal(h.fixture.products.find((item) => item.id === "hidden").active, true);
+  assert.equal(h.fixture.products.find((item) => item.id === "hidden").activo, true);
+  assert.match(h.$('[data-id="hidden"] .switch-text').textContent, /Activo/);
+  h.dom.window.close();
+});
+
+test("customer product query still limits the menu to products active in both fields", async () => {
+  const h = environment();
+  h.fixture.products.push({
+    ...product(), id: "hidden", name: "Producto oculto", active: false, activo: false,
+  });
+
+  await h.w.eval("loadProducts()");
+
+  const catalogQuery = h.calls.filter((call) => call.table === "products").at(-1);
+  assert.deepEqual(catalogQuery.filters, [["active", true], ["activo", true]]);
+  assert.deepEqual(Array.from(h.w.eval("products.map((item) => item.id)")), ["p"]);
+  h.dom.window.close();
+});
 
 test("only active assignments, active groups and active options reach the customer", async () => {
   const h = environment();
