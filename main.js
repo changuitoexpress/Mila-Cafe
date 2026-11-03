@@ -684,7 +684,7 @@ function activateCustomerAction(action) {
       scrollToSection("menu-top");
       showToast("Aún no hay productos destacados.");
     }
-    updateCustomerBottomNav(action === "featured" ? "menu" : "favorites");
+    updateCustomerBottomNav(action);
     return;
   }
 

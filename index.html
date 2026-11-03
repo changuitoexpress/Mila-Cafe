@@ -22,9 +22,9 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <link rel="stylesheet" href="theme.css" />
-<link rel="stylesheet" href="styles.css?v=home-wallet-nav-2" />
+<link rel="stylesheet" href="styles.css?v=home-shortcuts-3" />
 <link rel="stylesheet" href="product-sheet.css" />
-<link rel="stylesheet" href="menu-experience.css" />
+<link rel="stylesheet" href="menu-experience.css?v=home-shortcuts-4" />
 <link rel="stylesheet" href="menu-motion.css" />
 </head>
 <body>
@@ -117,8 +117,12 @@
       <div class="menu-intro">
         <p class="eyebrow">Hola, <span id="user-name-tag">—</span></p>
         <h2 id="menu-top">¿Qué se te antoja?</h2>
+        <p class="home-intro-copy">Encuentra tu próximo favorito y disfruta algo rico hoy.</p>
         <div class="menu-filters" aria-label="Filtros del menú">
-          <button class="menu-filter active" type="button">Destacados</button>
+          <button class="menu-filter active" type="button">
+            <span>Ver destacados</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"></path></svg>
+          </button>
         </div>
       </div>
       <section class="home-wallet-card" aria-labelledby="home-wallet-title">
@@ -192,6 +196,10 @@
       <button class="customer-bottom-action is-active" type="button" data-customer-action="menu" aria-current="page">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14v8a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4V8ZM8 8a4 4 0 0 1 8 0M8 4v2M12 3v3M16 4v2"></path></svg>
         <span>Menú</span>
+      </button>
+      <button class="customer-bottom-action" type="button" data-customer-action="featured">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9L12 3Z"></path></svg>
+        <span>Destacados</span>
       </button>
       <button class="customer-bottom-action" type="button" data-customer-action="favorites">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 8.8c0 5-8.8 10-8.8 10s-8.8-5-8.8-10A4.8 4.8 0 0 1 12 6a4.8 4.8 0 0 1 8.8 2.8Z"></path></svg>
@@ -309,8 +317,8 @@
   <script src="product-media.js"></script>
   <script src="product-customization.js"></script>
   <script src="client-product-sheet.js"></script>
-  <script src="menu-motion.js?v=home-wallet-nav-1"></script>
-  <script src="main.js?v=home-wallet-nav-1"></script>
+  <script src="menu-motion.js?v=home-shortcuts-2"></script>
+  <script src="main.js?v=home-shortcuts-2"></script>
   <script src="pwa.js"></script>
 </body>
 </html>

@@ -605,10 +605,15 @@ test("wallet counts to the new balance, shows the difference and waits until Mi 
 test("home shortcuts keep the wallet current and open the existing customer panels", async () => {
   const h = environment();
   h.fixture.profiles.push({ id: "customer", name: "Prueba", phone: "0000000000", wallet_balance: 12.25, is_admin: false });
-  await h.w.eval('products = [{id:"p",name:"Latte",category:"Café",price:50,active:true,activo:true}]; favoriteProductIds = new Set(["p"]); renderMenu();');
+  await h.w.eval('products = [{id:"p",name:"Latte",category:"Café",price:50,active:true,activo:true,destacado:true}]; favoriteProductIds = new Set(["p"]); renderMenu();');
   await h.w.eval("refreshWalletUI()");
 
   assert.equal(h.$("#home-wallet-balance").textContent, "12.25");
+  assert.equal(h.$("#customer-bottom-nav").querySelectorAll("[data-customer-action]").length, 5);
+  h.$('#customer-bottom-nav [data-customer-action="featured"]').click();
+  assert.equal(h.$("#featured-section").scrolledIntoView, true);
+  assert.ok(h.$('#customer-bottom-nav [data-customer-action="featured"]').classList.contains("is-active"));
+
   h.$('#customer-bottom-nav [data-customer-action="favorites"]').click();
   assert.equal(h.$("#favorites-section").scrolledIntoView, true);
   assert.ok(h.$('#customer-bottom-nav [data-customer-action="favorites"]').classList.contains("is-active"));
