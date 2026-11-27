@@ -1,2 +1,17 @@
 node_modules/
 /generated-artifacts/
+
+# Local environment variables and credentials
+.env
+.env.*
+!.env.example
+!.env.*.example
+.envrc
+.secrets/
+secrets/
+*.pem
+*.key
+*.p12
+*.pfx
+*credentials*.json
+*service-account*.json
